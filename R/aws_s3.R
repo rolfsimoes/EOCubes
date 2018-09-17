@@ -1,0 +1,64 @@
+#' @title AWS S3 functions
+#'
+#' @name s3_list
+#'
+#' @description This function retrieves a list of objects from a bucket of the Amazon S3 service and
+#' generate url for each one. The default base url text used to form the final url is
+#' given by \code{getOption("s3_base_url", "https://\%s.s3.amazonaws.com/\%s")}, where
+#' the two formating text parameters \code{\%s} correspond to the bucket name and
+#' the object key, respectively.
+#'
+#' Use \code{regex} parameter to filter those objects of your interest.
+#'
+#' @note You must set \code{Sys.setenv("AWS_ACCESS_KEY_ID", <your_key>)} and
+#' \code{Sys.setenv("AWS_SECRET_ACCESS_KEY", <your_access_key>)} to have access to
+#' an aws.s3 \code{bucket} object. If you prefer, you can pass access parameters to
+#' \code{...} argument the same used by \code{aws.s3} package.
+#' For more details see https://github.com/cloudyr/aws.s3.
+#'
+#' @param bucket   A \code{character} text informing an existing bucket.
+#' @param regex    A \code{character} with regular expression indicating which files will be included.
+#' @param ...      Any extra arguments to be passed to \code{aws.s3} package to access the bucket.
+#'
+#' @return A \code{character} vector of object's url.
+#'
+#' @export
+#'
+s3_list <- function(bucket, regex  = ".*\\.tif$", ...) {
+
+    bucket <- aws.s3::get_bucket(bucket = bucket, max = Inf, ...)
+
+    urls <- unlist(lapply(
+        bucket,
+        function(x) {
+            .s3_url(x[["Bucket"]], x[["Key"]])
+        }), use.names = FALSE)
+
+    urls <- urls[grep(pattern = regex, x = urls)]
+
+    return(urls)
+}
+
+#' @title Internal AWS S3 functions
+#'
+#' @name .s3_url
+#'
+#' @description This function returns an url to an bucket's object in the Amazon S3 service.
+#' The default base url text used to form the final url is
+#' given by \code{getOption("s3_base_url", "https://\%s.s3.amazonaws.com/\%s")}, where
+#' the two formating text parameters \code{\%s} correspond to the bucket name and
+#' the object key, respectively.
+#'
+#' @param bucket     A \code{character} text informing the remote name where coverage will be published.
+#' @param object     A \code{character} text with the object key name in bucket.
+#'
+#' @return A \code{character} vector of object's url.
+#'
+.s3_url <- function(bucket, object) {
+
+    url <- sprintf(getOption(
+        .s3_base_url_option, "https://%s.s3.amazonaws.com/%s"), bucket, object
+    )
+
+    return(url)
+}
