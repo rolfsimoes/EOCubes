@@ -53,6 +53,8 @@ add_coverage <- function(coverage, name, overwrite = FALSE) {
 
     .check_coverage(coverage)
 
+    class(coverage) <- "coverage"
+
     if (!is.null(.global[["manifest"]][[name]]) && !overwrite) {
 
         stop(sprintf(paste(
@@ -220,12 +222,20 @@ add_remote <- function(name, location, bucket = NULL, overwrite = FALSE, ...) {
         stop(sprintf("Remote name '%s' already exists.", name))
     }
 
-    if (!is.null(bucket) && !aws.s3::bucket_exists(bucket)) {
+    tryCatch({
+        if (!is.null(bucket) && !invisible(aws.s3::bucket_exists(bucket))) {
 
-        message(sprintf(paste(
-            "Informed bucket '%' is not accessible with current authentication keys.",
-            "Continuing anyway."), bucket))
-    }
+            message(sprintf(paste(
+                "Informed bucket '%' is not accessible with current authentication keys.",
+                "Continuing anyway."), bucket))
+        }}, error = function(e) {
+
+            stop(sprintf(paste(
+                "Error while checking bucket '%s'.",
+                "Error message:\n",
+                "\"%s\""), bucket, e$message))
+        }
+    )
 
     manifest <- .open_yml(.manifest_yml(location))
 
@@ -425,6 +435,8 @@ rm_remote <- function(name) {
 
         .check_coverage(coverage)
 
+        class(coverage) <- "coverage"
+
         return(coverage)
     })
 
@@ -455,6 +467,8 @@ read_coverage <- function(location) {
     coverage <- .open_yml(location)
 
     .check_coverage(coverage)
+
+    class(coverage) <- "coverage"
 
     return(coverage)
 }
@@ -510,10 +524,10 @@ publish_coverage <- function(coverage, name, remote, overwrite = FALSE, ...) {
     bucket <- .global[["remotes"]][[remote]][["bucket"]]
 
     manifest <- tryCatch({
-        if (aws.s3::head_object(.manifest.file, bucket = bucket)) {
+        if (invisible(aws.s3::head_object(.manifest.file, bucket = bucket))) {
 
             yaml::yaml.load(rawToChar(
-                aws.s3::get_object(.manifest.file, bucket = bucket)
+                invisible(aws.s3::get_object(.manifest.file, bucket = bucket))
             ))
         } else {
 
@@ -605,10 +619,10 @@ unpublish_coverage <- function(name, remote, ...) {
     bucket <- .global[["remotes"]][[remote]][["bucket"]]
 
     manifest <- tryCatch(
-        if (aws.s3::head_object(.manifest.file, bucket = bucket)) {
+        if (invisible(aws.s3::head_object(.manifest.file, bucket = bucket))) {
 
             yaml::yaml.load(rawToChar(
-                aws.s3::get_object(.manifest.file, bucket = bucket)
+                invisible(aws.s3::get_object(.manifest.file, bucket = bucket))
             ))
         },
         error = function(e) {
@@ -672,12 +686,20 @@ unpublish_coverage <- function(name, remote, ...) {
         stop(sprintf("The informed remote '%s' has no 'bucket' defined.", name))
     }
 
-    if (!aws.s3::bucket_exists(bucket, ...)) {
+    tryCatch({
+        if (!invisible(aws.s3::bucket_exists(bucket, ...))) {
 
-        stop(sprintf(
-            "The remote bucket '%s' is not accessible with current authentication key.", name)
-        )
-    }
+            stop(sprintf(
+                "The remote bucket '%s' is not accessible with current authentication key.", name)
+            )
+        }},
+        error = function(e) {
+
+            stop(sprintf(paste(
+                "Error while checking bucket '%s'.",
+                "Error message:\n",
+                "\"%s\""), bucket, e$message))
+        })
 
     return(TRUE)
 }

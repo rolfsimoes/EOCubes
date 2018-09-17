@@ -96,12 +96,17 @@ print.coverage <- function(x, ...) {
         stop("Invalid coverage object.")
     }
 
+    if (class(coverage) == "coverage") {
+
+        return(TRUE)
+    }
+
     .check_manifest(coverage[["manifest"]])
     .check_bands(coverage[["bands"]])
     .check_coverage_timeline(coverage)
     .check_bricks(coverage[["bricks"]])
 
-    return(coverage)
+    return(TRUE)
 }
 
 #' @title Internal coverage functions
@@ -193,19 +198,39 @@ print.coverage <- function(x, ...) {
 #' The values can be nested in lists by each key.
 #'
 #' @param coverage      A \code{coverage} object.
-#' @param nest_by_key   A \code{logical} indicating if values must be nested by key.
+#' @param ...           A set of \code{names} of all those bands to be filtered.
+#' @param nest_by_key   A \code{logical} indicating if values must be nested by key. Defalt \code{FALSE}
 #'
 #' @return A bricks \code{data.frame} object.
 #'
 #' @export
 #'
-get_bricks <- function(coverage, nest_by_key = FALSE) {
+get_bricks <- function(coverage, ..., nest_by_key = FALSE) {
 
     .check_coverage(coverage)
 
-    bands <- .as_df(coverage[["bands"]])
+    class(coverage) <- "coverage"
+
+    bands <- sapply(as.list(substitute(list(...)))[-1:0], as.character, USE.NAMES = FALSE)
+
+    bands_def <- .as_df(coverage[["bands"]])
+    timeline <- coverage[["timeline"]]
     bricks <- .as_df(coverage[["bricks"]])
-    index <- match(bricks[["band_long_name"]], bands[["band_long_name"]])
+
+    index <- match(bricks[["band_long_name"]], bands_def[["band_long_name"]])
+
+    for (i in names(bands_def)) {
+
+        bricks[[i]] <- bands_def[[i]][index]
+    }
+
+    if (length(bands) > 0 && all(bands %in% bands_def[["band_short_name"]])) {
+
+        bricks <- bricks[(bricks[["band_short_name"]] %in% bands),]
+    } else if (length(bands) > 0 && all(bands %in% bands_def[["band_long_name"]])) {
+
+        bricks <- bricks[(bricks[["band_long_name"]] %in% bands),]
+    }
 
     if (nest_by_key) {
 
@@ -217,20 +242,11 @@ get_bricks <- function(coverage, nest_by_key = FALSE) {
                 if (length(value) > 1) list(x) else value
             }, simplify = FALSE), recursive = FALSE, use.names = FALSE)
         }
-        for (i in names(bands)) {
-
-            nested[[i]] <- unlist(tapply(
-                bands[[i]][index], bricks[["key"]], list, simplify = FALSE),
-                recursive = FALSE, use.names = FALSE)
-        }
-
-        return(nested)
+        bricks <- nested
     }
 
-    for (i in names(bands)) {
-
-        bricks[[i]] <- bands[[i]][index]
-    }
+    bricks[["timeline"]] <- list(as.Date(unlist(timeline, use.names = FALSE),
+                                         origin = "1970-01-01"))
 
     return(bricks)
 }

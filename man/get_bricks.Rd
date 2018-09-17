@@ -4,12 +4,14 @@
 \alias{get_bricks}
 \title{Coverage functions}
 \usage{
-get_bricks(coverage, nest_by_key = FALSE)
+get_bricks(coverage, ..., nest_by_key = FALSE)
 }
 \arguments{
 \item{coverage}{A \code{coverage} object.}
 
-\item{nest_by_key}{A \code{logical} indicating if values must be nested by key.}
+\item{...}{A set of \code{names} of all those bands to be filtered.}
+
+\item{nest_by_key}{A \code{logical} indicating if values must be nested by key. Defalt \code{FALSE}}
 }
 \value{
 A bricks \code{data.frame} object.
