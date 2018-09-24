@@ -6,22 +6,26 @@
 #' contains all information about the coverage authoring, data policy, and
 #' bricks definitions.
 #'
-#' @param bricks     A bricks \code{data.frame}.
-#' @param manifest   A description \code{list} returned by \code{coverage.manifest} function.
+#' @param bricks_df   A bricks \code{data.frame}.
+#' @param timeline    A \code{date} vector indicating all dates of each brick time series.
+#' @param manifest    A description \code{list} returned by \code{coverage.manifest} function.
 #'
 #' @return A \code{coverage} object.
 #'
 #' @export
 #'
-coverage <- function(bricks, manifest = manifest()) {
+coverage <- function(bricks_df, timeline, manifest = manifest()) {
 
-    .check_bricks_df(bricks)
+    .check_bricks_df(bricks_df)
+    .check_timeline(timeline, bricks_df)
 
     coverage <- structure(list(
         manifest = .as_lom(.as_df(manifest), .template.manifest),
-        bands    = .as_lom(bricks, .template.bands),
-        timeline = .as_lom(bricks[, "timeline"], .template.timeline),
-        bricks   = .as_lom(bricks, .template.bricks)
+        bands    = .as_lom(bricks_df, .template.bands),
+        timeline = .as_lom(tibble::tibble(
+            timeline = list(as.character(unlist(timeline, use.names = FALSE)))),
+            .template.timeline),
+        bricks   = .as_lom(bricks_df, .template.bricks)
     ), class = "coverage")
 
     return(coverage)
@@ -42,7 +46,7 @@ coverage <- function(bricks, manifest = manifest()) {
 #'
 check_coverage <- function(coverage, touch_files = TRUE) {
 
-    .check_bricks(coverage[["bricks"]])
+    .check_coverage(coverage)
 
     # Checking if all brick files exists
     if (touch_files) {
@@ -76,7 +80,7 @@ print.coverage <- function(x, ...) {
                       collapse = ", ")))
     cat("\n")
     cat("Bricks table")
-    print(get_bricks(x))
+    print(.as_df(x[["bricks"]]))
 }
 
 #' @title Internal coverage functions
@@ -103,8 +107,34 @@ print.coverage <- function(x, ...) {
 
     .check_manifest(coverage[["manifest"]])
     .check_bands(coverage[["bands"]])
-    .check_coverage_timeline(coverage)
+    .check_timeline(coverage[["timeline"]], bricks_df = .as_df(coverage[["bricks"]]))
     .check_bricks(coverage[["bricks"]])
+
+    return(TRUE)
+}
+
+#' @title Internal coverage functions
+#'
+#' @name .check_manifest
+#'
+#' @description Check for validity of a coverages manifest list.
+#'
+#' @param manifest   A manifest \code{list} object.
+#'
+#' @return \code{TRUE} if pass in all checks.
+#'
+.check_manifest <- function(manifest) {
+
+    if (.is_empty(manifest)) {
+
+        stop("The coverage manifest is empty.")
+    }
+
+    tryCatch(.as_lom(.as_df(manifest), .template.manifest),
+             error = function(e) {
+
+                 stop("Invalid coverage manifest data.")
+             })
 
     return(TRUE)
 }
@@ -137,27 +167,31 @@ print.coverage <- function(x, ...) {
 
 #' @title Internal coverage functions
 #'
-#' @name .check_coverage_timeline
+#' @name .check_timeline
 #'
 #' @description Check for validity of a coverage timeline field.
 #'
-#' @param coverage   A \code{coverage} object.
+#' @param timeline    A \code{vector} sequence with dates.
+#' @param bricks_df   A bricks \code{data.frame} object.
 #'
 #' @return \code{TRUE} if pass in all checks.
 #'
-.check_coverage_timeline <- function(coverage) {
+.check_timeline <- function(timeline, bricks_df) {
 
-    if (.is_empty(coverage)) {
+    if (.is_empty(timeline)) {
 
-        stop("The coverage bands definition is empty.")
+        stop("The timeline is empty.")
     }
 
-    if (any(coverage[["bricks"]][["time_len"]] != length(coverage[["timeline"]][[1]]))) {
+    timeline <- list(as.character(unlist(timeline, use.names = FALSE)))
+
+    if (any(bricks_df[["time_len"]] != length(timeline[[1]]))) {
 
         warning(sprintf(paste(
-            "One or more bricks 'time_len' metadata are inconsistent with",
-            "'timeline' length (%s)",
-            length(coverage[["timeline"]][[1]]))), call. = FALSE)
+            "One or more bricks 'timeline' have inconsistent length (%s)",
+            "with fetched 'time_len' metadata.",
+            length(timeline[[1]])
+        )), call. = FALSE)
     }
 
     return(TRUE)
@@ -180,12 +214,13 @@ print.coverage <- function(x, ...) {
         stop("The coverage bricks list is empty.")
     }
 
-    tryCatch(.as_lom(.as_df(bricks), .template.bricks),
-             error = function(e) {
+    tryCatch(
+        .as_lom(.as_df(bricks), .template.bricks),
+        error = function(e) {
 
-                 stop(sprintf("Invalid coverage bricks data with error: \"%s\".",
-                              e$message))
-             })
+            stop(sprintf("Invalid coverage bricks data with error: \"%s\".",
+                         e$message))
+        })
 
     return(TRUE)
 }
@@ -194,59 +229,149 @@ print.coverage <- function(x, ...) {
 #'
 #' @name get_bricks
 #'
-#' @description Joins bricks with bands information from \code{coverage} object.
-#' The values can be nested in lists by each key.
+#' @description Lits bricks from \code{coverage} object.
 #'
 #' @param coverage      A \code{coverage} object.
-#' @param ...           A set of \code{names} of all those bands to be filtered.
-#' @param nest_by_key   A \code{logical} indicating if values must be nested by key. Defalt \code{FALSE}
+#' @param ...           A set of \code{names} or \code{character} vector with the bands to be returned.
 #'
-#' @return A bricks \code{data.frame} object.
+#' @return A \code{list} of bricks \code{data.frame} objects.
 #'
 #' @export
 #'
-get_bricks <- function(coverage, ..., nest_by_key = FALSE) {
+get_bricks <- function(coverage, ...) {
 
     .check_coverage(coverage)
 
-    class(coverage) <- "coverage"
+    bands_df <- .as_df(coverage[["bands"]])
+    bricks <- coverage[["bricks"]]
 
-    bands <- sapply(as.list(substitute(list(...)))[-1:0], as.character, USE.NAMES = FALSE)
+    bricks <- lapply(bricks, function(b) {
+        b <- .attach_bands_info(.as_df(b), bands_df)
+        .filter_bands(b, ...)
+    })
 
-    bands_def <- .as_df(coverage[["bands"]])
-    timeline <- coverage[["timeline"]]
-    bricks <- .as_df(coverage[["bricks"]])
+    lapply(seq_along(bricks), function(i) {
+        b <- .as_df(bricks[i])
+        b[["timeline"]] <- coverage[["timeline"]]
+        return(b)
+    })
+}
 
-    index <- match(bricks[["band_long_name"]], bands_def[["band_long_name"]])
+#' @title Coverage functions
+#'
+#' @name get_rasters
+#'
+#' @description Lits rasters from \code{coverage} object.
+#'
+#' @param coverage      A \code{coverage} object.
+#' @param ...           A set of \code{names} or \code{character} vector with the bands to be returned.
+#'
+#' @return A \code{list} of rasters \code{data.frame} objects.
+#'
+#' @export
+#'
+get_rasters <- function(coverage, ...) {
 
-    for (i in names(bands_def)) {
+    .check_coverage(coverage)
 
-        bricks[[i]] <- bands_def[[i]][index]
-    }
+    bands_df <- .as_df(coverage[["bands"]])
+    bricks <- coverage[["bricks"]]
 
-    if (length(bands) > 0 && all(bands %in% bands_def[["band_short_name"]])) {
-
-        bricks <- bricks[(bricks[["band_short_name"]] %in% bands),]
-    } else if (length(bands) > 0 && all(bands %in% bands_def[["band_long_name"]])) {
-
-        bricks <- bricks[(bricks[["band_long_name"]] %in% bands),]
-    }
-
-    if (nest_by_key) {
-
-        nested <- unique(bricks[,"key"])
-        for (i in names(bricks)) {
-
-            nested[[i]] <- unlist(tapply(bricks[[i]], bricks[["key"]], function(x) {
-                value <- unique(x)
-                if (length(value) > 1) list(x) else value
-            }, simplify = FALSE), recursive = FALSE, use.names = FALSE)
-        }
-        bricks <- nested
-    }
-
-    bricks[["timeline"]] <- list(as.Date(unlist(timeline, use.names = FALSE),
-                                         origin = "1970-01-01"))
+    bricks <- lapply(seq_along(bricks), function(i) {
+        b <- .attach_bands_info(.as_df(bricks[i]), bands_df)
+        b <- .filter_bands(b, ...)
+        b[["timeline"]] <- coverage[["timeline"]]
+        return(b)
+    })
 
     return(bricks)
+}
+
+#' @title Coverage functions
+#'
+#' @name func_brick
+#'
+#' @description Returns an enclosure function that can be used as argument of
+#' \code{apply_bricks} and \code{apply_bricks_cluster} functions' parameter \code{fun}.
+#'
+#' @param expr   An R language expression to be evaluated as the function body.
+#' @param ...    Any additional arguments to be included in function evaluation.
+#'
+#' @return The evaluation of \code{expr} expression.
+#'
+#' @export
+#'
+func_brick <- function(expr, ...) {
+
+    expr <- substitute(expr)
+    fun_dots <- as.list(substitute(list(...)))[-1:0]
+
+    function(...) {
+
+        eval(expr, append(as.list(substitute(list(...)))[-1:0], fun_dots))
+    }
+}
+
+#' @title Coverage functions
+#'
+#' @name apply_bricks
+#'
+#' @description Apply a function on each \code{coverage}'s bricks object. Parameter
+#' \code{fun} is a function with bricks attributes names as parameters. A helper
+#' function \code{func_brick} can be used to create a prototype of this function easily.
+#'
+#' @param coverage   A \code{coverage} object.
+#' @param fun        A function to be called for each brick that receives the bricks' attributes.
+#' @param ...        A set of \code{names} or \code{character} vector with the bands to be returned.
+#'
+#' @return A rasters \code{data.frame} object.
+#'
+#' @export
+#'
+apply_bricks <- function(coverage, fun, ...) {
+
+    lapply(get_bricks(coverage, ...), function(b) {
+
+        return(do.call(fun, as.list(b)))
+    })
+}
+
+#' @title Coverage functions
+#'
+#' @name apply_bricks_cluster
+#'
+#' @description Apply a function on each \code{coverage}'s bricks object. Parameter
+#' \code{fun} is a function with bricks attributes names as parameters. A helper
+#' function \code{func_brick} can be used to create a prototype of this function easily.
+#' The function creates processing clusters using package \code{parallel}.
+#'
+#' @param coverage       A \code{coverage} object.
+#' @param fun            A function to be called for each brick that receives the bricks' attributes.
+#' @param ...            A set of \code{names} or \code{character} vector with the bands to be returned.
+#' @param clusters       An \code{integer} with the number of clusters to be created.
+#' @param cluster_type   A \code{character} text with the type of cluster to be created.
+#'
+#' @return A rasters \code{data.frame} object.
+#'
+#' @export
+#'
+apply_bricks_cluster <- function(coverage, fun, ..., clusters = 1, cluster_type = c("PSOCK", "FORK")) {
+
+    bricks <- get_bricks(coverage, ...)
+
+    if (!requireNamespace("parallel", quietly = TRUE)) {
+
+        message("Unable to load `parallel` package. Running serial `apply_bricks`...")
+        return(apply_bricks(coverage, fun, ...))
+    }
+
+    cluster_type <- match.arg(cluster_type, c("PSOCK", "FORK"))
+    cl <- parallel::makeCluster(clusters, type = cluster_type)
+    res <- parallel::clusterApply(cl, bricks, function(b, ...) {
+
+        return(do.call(..1, as.list(b)))
+    }, fun)
+    parallel::stopCluster(cl)
+
+    res
 }

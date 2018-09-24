@@ -109,6 +109,7 @@
     }
 
     .proc <- function(t, df, ...) {
+
         n <- names(t)
         result <- lapply(seq_along(t), function(i) {
 
@@ -116,6 +117,7 @@
             m <- substr(n[i], 1, 1)
             s <- substr(n[i], 2, nchar(n[i]))
             if (m == ":") {
+
                 if (is.null(df[[s]])) {
 
                     stop(sprintf("The group field '%s' is missing.", s))
@@ -124,12 +126,14 @@
                 names(result) = paste0(s, ":", names(result))
                 result
             } else if (m == "-") {
+
                 result <- .grp_by(t[i], df, 1:nrow(df), ...)
                 names(result) <- NULL
                 result <- list(result)
                 names(result) <- s
                 result
             } else {
+
                 .nest(t[i], df, ...)
             }
         })
@@ -139,30 +143,36 @@
     .proc(template, df)
 }
 
-.as_df <- function(mo) {
+.as_df <- function(lom) {
 
-    .grouped_mo <- function(mo, n) {
-        names(mo) <- NULL
+    .grouped_lom <- function(lom, n) {
 
+        names(lom) <- NULL
         res <- mapply(function(x, y) {
+
             f <- gsub("(.+):.+", "\\1", y)
             v <- gsub(".+:(.+)", "\\1", y)
             g <- list(v)
             names(g) <- f
             if (!is.list(x)) {
+
                 res <- list(value = x)
             } else if (is.null(names(x))) {
-                res <- .listed_mo(x, y)
+
+                res <- .listed_lom(x, y)
             } else if (any(grepl(".+:.+", names(x)))) {
-                res <- .grouped_mo(x, names(x))
+
+                res <- .grouped_lom(x, names(x))
             } else {
-                res <- .nested_mo(x, names(x))
+
+                res <- .nested_lom(x, names(x))
             }
             res <- append(g, res)
             res
-        }, mo, n, SIMPLIFY = FALSE)
+        }, lom, n, SIMPLIFY = FALSE)
 
         res <- Reduce(function(x, y) {
+
             mapply(c, x, y, SIMPLIFY = FALSE)
         }, res[-1:0], res[[1]])
 
@@ -170,23 +180,29 @@
         res
     }
 
-    .listed_mo <- function(mo, n) {
-        res <- lapply(mo, function(x) {
+    .listed_lom <- function(lom, n) {
+        res <- lapply(lom, function(x) {
+
             if (!is.list(x)) {
+
                 res <- list(list(x))
                 names(res) <- n
             } else if (is.null(names(x))) {
+
                 res <- list(x)
                 names(res) <- n
             } else if (any(grepl(".+:.+", names(x)))) {
-                res <- .grouped_mo(x, names(x))
+
+                res <- .grouped_lom(x, names(x))
             } else {
-                res <- .nested_mo(x, names(x))
+
+                res <- .nested_lom(x, names(x))
             }
             res
         })
 
         res <- Reduce(function(x, y) {
+
             mapply(c, x, y, SIMPLIFY = FALSE)
         }, res[-1:0], res[[1]])
 
@@ -194,51 +210,65 @@
         res
     }
 
-    .nested_mo <- function(mo, n) {
-        names(mo) <- NULL
+    .nested_lom <- function(lom, n) {
 
+        names(lom) <- NULL
         res <- mapply(function(x, y) {
+
             if (!is.list(x)) {
+
                 res <- list(list(x))
                 if (length(x) > 1)
                     res <- list(res)
                 names(res) <- y
             } else if (is.null(names(x))) {
-                res <- .listed_mo(x, y)
+
+                res <- .listed_lom(x, y)
             } else if (any(grepl(".+:.+", names(x)))) {
-                res <- .grouped_mo(x, names(x))
+
+                res <- .grouped_lom(x, names(x))
             } else {
-                res <- .nested_mo(x, names(x))
+
+                res <- .nested_lom(x, names(x))
             }
             res
-        }, mo, n, SIMPLIFY = FALSE)
+        }, lom, n, SIMPLIFY = FALSE)
 
         res <- unlist(res, recursive = FALSE)
         res
     }
 
-    n <- names(mo)
+    n <- names(lom)
     if (is.null(n)) {
-        res <- .listed_mo(mo, "value")
+
+        res <- .listed_lom(lom, "value")
     } else if (any(grepl(".+:.+", n))) {
-        res <- .grouped_mo(mo, n)
+
+        res <- .grouped_lom(lom, n)
     } else {
-        res <- .nested_mo(mo, n)
+
+        res <- .nested_lom(lom, n)
     }
 
     res <- unlist(res, recursive = FALSE)
 
     len <- max(sapply(res, function(x) length(x[[1]])))
+
     res <- lapply(res, function(x) {
         if (!is.list(x)) {
+
             rep(x, each = len)
         } else {
             unlist(lapply(x, function(y) {
+
                 if (length(y) == 1) {
+
                     rep(y, len)
                 } else if (length(y) == len) {
+
                     unlist(y, recursive = FALSE)
                 } else {
+
                     stop("The 'list model object' is not conversible to data frame.")
                 }
             }), recursive = FALSE)
@@ -248,6 +278,7 @@
     res <- tryCatch(
         tibble::as.tibble(res),
         error = function(e) {
+
             stop("The 'list model object' is not conversible to data frame.")
         })
 

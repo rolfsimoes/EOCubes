@@ -57,29 +57,3 @@ manifest <- function(description = NA_character_,
     return(manifest)
 }
 
-
-#' @title Internal manifest functions
-#'
-#' @name .check_manifest
-#'
-#' @description Check for validity of a coverages manifest list.
-#'
-#' @param manifest   A manifest \code{list} object.
-#'
-#' @return \code{TRUE} if pass in all checks.
-#'
-.check_manifest <- function(manifest) {
-
-    if (.is_empty(manifest)) {
-
-        stop("The coverage manifest is empty.")
-    }
-
-    tryCatch(.as_lom(.as_df(manifest), .template.manifest),
-             error = function(e) {
-
-                 stop("Invalid coverage manifest data.")
-             })
-
-    return(TRUE)
-}

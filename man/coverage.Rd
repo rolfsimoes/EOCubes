@@ -4,10 +4,12 @@
 \alias{coverage}
 \title{Coverage functions}
 \usage{
-coverage(bricks, manifest = manifest())
+coverage(bricks_df, timeline, manifest = manifest())
 }
 \arguments{
-\item{bricks}{A bricks \code{data.frame}.}
+\item{bricks_df}{A bricks \code{data.frame}.}
+
+\item{timeline}{A \code{date} vector indicating all dates of each brick time series.}
 
 \item{manifest}{A description \code{list} returned by \code{coverage.manifest} function.}
 }

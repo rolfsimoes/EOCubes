@@ -121,9 +121,6 @@ describe_coverage <- function(name) {
         stop(sprintf("Coverage '%s' not found.", name))
     }
 
-    result <- list(result)
-    names(result) <- name
-
     return(result)
 }
 
@@ -550,6 +547,12 @@ publish_coverage <- function(coverage, name, remote, overwrite = FALSE, ...) {
             "There is already a registered coverage",
             "with the name '%s' in bucket '%s'.", name, bucket
         )))
+    } else if (is.null(manifest[[name]])) {
+
+        message(sprintf("Creating new coverage '%s'...", name))
+    } else if (overwrite) {
+
+        message(sprintf("Overwriting the coverage '%s'...", name))
     }
 
     file <- sprintf("%s.yml", name)
