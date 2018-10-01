@@ -366,13 +366,20 @@ apply_bricks_cluster <- function(coverage, fun, ..., clusters = 1, cluster_type 
     }
 
     cluster_type <- match.arg(cluster_type, c("PSOCK", "FORK"))
-    cl <- parallel::makeCluster(clusters, type = cluster_type)
-    parallel::clusterExport(cl, "fun", environment())
-    res <- parallel::clusterApply(cl, bricks, function(b) {
+    res <- tryCatch({
+        cl <- parallel::makeCluster(clusters, type = cluster_type)
+        parallel::clusterExport(cl, "fun", environment())
+        res <- parallel::clusterApply(cl, bricks, function(b) {
 
-        return(do.call(fun, as.list(b)))
+            return(do.call(fun, as.list(b)))
         })
-    parallel::stopCluster(cl)
+        return(res)
+    },
+    error = function(e) {
+
+        stop(e$message)
+    },
+    finally = parallel::stopCluster(cl))
 
     res
 }
