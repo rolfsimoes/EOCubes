@@ -245,21 +245,21 @@ get_bricks <- function(coverage, ...) {
     bands_df <- .as_df(coverage[["bands"]])
     bricks <- coverage[["bricks"]]
 
-    bricks <- lapply(bricks, function(b) {
-        b <- .attach_bands_info(.as_df(b), bands_df)
-        .filter_bands(b, ...)
-    })
-
-    lapply(seq_along(bricks), function(i) {
-        b <- .as_df(bricks[i])
-        b[["timeline"]] <- coverage[["timeline"]]
+    bricks <- lapply(seq_along(bricks), function(i) {
+        b <- .attach_bands_info(.as_df(bricks[i]), bands_df)
+        b <- .filter_bands(b, ...)
         return(b)
     })
+
+    bricks <- tibble::as_tibble(do.call(rbind, bricks))
+    bricks[["timeline"]] <- coverage[["timeline"]][["timeline"]]
+
+    return(bricks)
 }
 
 #' @title Coverage functions
 #'
-#' @name get_rasters
+#' @name get_bricks_list
 #'
 #' @description Lits rasters from \code{coverage} object.
 #'
@@ -270,7 +270,7 @@ get_bricks <- function(coverage, ...) {
 #'
 #' @export
 #'
-get_rasters <- function(coverage, ...) {
+get_bricks_list <- function(coverage, ...) {
 
     .check_coverage(coverage)
 
@@ -280,7 +280,7 @@ get_rasters <- function(coverage, ...) {
     bricks <- lapply(seq_along(bricks), function(i) {
         b <- .attach_bands_info(.as_df(bricks[i]), bands_df)
         b <- .filter_bands(b, ...)
-        b[["timeline"]] <- coverage[["timeline"]]
+        b[["timeline"]] <- coverage[["timeline"]][["timeline"]]
         return(b)
     })
 
@@ -289,10 +289,11 @@ get_rasters <- function(coverage, ...) {
 
 #' @title Coverage functions
 #'
-#' @name func_brick
+#' @name fun_brick
 #'
 #' @description Returns an enclosure function that can be used as argument of
 #' \code{apply_bricks} and \code{apply_bricks_cluster} functions' parameter \code{fun}.
+#' Parameters passed in \code{...} can be viewed in \code{expr} code.
 #'
 #' @param expr   An R language expression to be evaluated as the function body.
 #' @param ...    Any additional arguments to be included in function evaluation.
@@ -301,7 +302,7 @@ get_rasters <- function(coverage, ...) {
 #'
 #' @export
 #'
-func_brick <- function(expr, ...) {
+fun_brick <- function(expr, ...) {
 
     expr <- substitute(expr)
     fun_dots <- list(...)
@@ -318,7 +319,7 @@ func_brick <- function(expr, ...) {
 #'
 #' @description Apply a function on each \code{coverage}'s bricks object. Parameter
 #' \code{fun} is a function with bricks attributes names as parameters. A helper
-#' function \code{func_brick} can be used to create a prototype of this function easily.
+#' function \code{fun_brick} can be used to create a prototype of this function easily.
 #'
 #' @param coverage   A \code{coverage} object.
 #' @param fun        A function to be called for each brick that receives the bricks' attributes.
@@ -330,7 +331,7 @@ func_brick <- function(expr, ...) {
 #'
 apply_bricks <- function(coverage, fun, ...) {
 
-    lapply(get_bricks(coverage, ...), function(b) {
+    lapply(get_bricks_list(coverage, ...), function(b) {
 
         return(do.call(fun, as.list(b)))
     })
@@ -357,8 +358,6 @@ apply_bricks <- function(coverage, fun, ...) {
 #'
 apply_bricks_cluster <- function(coverage, fun, ..., clusters = 1, cluster_type = c("PSOCK", "FORK")) {
 
-    bricks <- get_bricks(coverage, ...)
-
     if (!requireNamespace("parallel", quietly = TRUE)) {
 
         message("Unable to load `parallel` package. Running serial `apply_bricks`...")
@@ -366,10 +365,18 @@ apply_bricks_cluster <- function(coverage, fun, ..., clusters = 1, cluster_type 
     }
 
     cluster_type <- match.arg(cluster_type, c("PSOCK", "FORK"))
+
     res <- tryCatch({
+
+        message(sprintf("Creating %s '%s' cluster(s)...", clusters, cluster_type))
         cl <- parallel::makeCluster(clusters, type = cluster_type)
+
+        message("Exporting objects to cluster(s)...")
         parallel::clusterExport(cl, "fun", environment())
-        res <- parallel::clusterApply(cl, bricks, function(b) {
+
+        message("Starting processes...")
+        res <- parallel::clusterApply(
+            cl, get_bricks_list(coverage, ...), function(b) {
 
             return(do.call(fun, as.list(b)))
         })
@@ -380,6 +387,7 @@ apply_bricks_cluster <- function(coverage, fun, ..., clusters = 1, cluster_type 
         stop(e$message)
     },
     finally = parallel::stopCluster(cl))
+    message("Processes finished.")
 
-    res
+    return(res)
 }

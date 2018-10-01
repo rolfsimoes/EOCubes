@@ -19,5 +19,5 @@ A rasters \code{data.frame} object.
 \description{
 Apply a function on each \code{coverage}'s bricks object. Parameter
 \code{fun} is a function with bricks attributes names as parameters. A helper
-function \code{func_brick} can be used to create a prototype of this function easily.
+function \code{fun_brick} can be used to create a prototype of this function easily.
 }
