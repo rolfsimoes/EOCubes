@@ -304,7 +304,7 @@ get_rasters <- function(coverage, ...) {
 func_brick <- function(expr, ...) {
 
     expr <- substitute(expr)
-    fun_dots <- as.list(substitute(list(...)))[-1:0]
+    fun_dots <- list(...)
 
     function(...) {
 
