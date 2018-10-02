@@ -17,7 +17,7 @@
 #'
 #' @export
 #'
-bricks_df <- function(files, bands_df = coverage::MOD13Q1_bands) {
+bricks_df <- function(files, bands_df = EOCubes::MOD13Q1_bands) {
 
     index <- match(.files.bands(files, bands = bands_df), bands_df[["band_long_name"]])
 

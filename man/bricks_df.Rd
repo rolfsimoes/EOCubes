@@ -4,7 +4,7 @@
 \alias{bricks_df}
 \title{Bricks \code{data.frame} function}
 \usage{
-bricks_df(files, bands_df = coverage::MOD13Q1_bands)
+bricks_df(files, bands_df = EOCubes::MOD13Q1_bands)
 }
 \arguments{
 \item{files}{A \code{character} vector listing all raster files location to be used as bricks.}
