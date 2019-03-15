@@ -20,3 +20,65 @@ or \code{""} value. If \code{x} is a \code{numeric} vector, it is empty if it ha
 at least one \code{NA} as its element. If \code{x} is a \code{list}, it is empty if it has length zero.
 Otherwise, it is empty if it is \code{NULL} or has length zero.
 }
+\details{
+#' @title Internal functions
+#'
+#' @description Open a brick file using \code{raster} package. If \code{file} is a url, it uses
+#' GDAL driver \code{vsicurl}.
+#'
+#' @param file   A \code{character} text indicating a file path (local or in the web) to be opened.
+#'
+#' @return A \code{RasterBrick} object.
+#'
+.raster.open <- function(file) {
+
+if (grepl("^https?://.+", file)) {
+
+file = paste0("/vsicurl/", file)
+    }
+
+raster <- tryCatch(raster::brick(file, values = FALSE), error = function(e) NULL)
+
+if (is.null(raster)) {
+
+stop(sprintf("Error while opening raster '%s'.\nFile is unreachable.", file))
+    }
+
+return(brick)
+}
+
+#' @title Internal functions
+#'
+#' @description Test if all files in a bricks \code{data.frame} are reachable.
+#' A progress bar will be showed if the number of files in bricks is greater or equal
+#' the value of \code{getOption("progress_bar", 10)}.
+#'
+#' @param files   A bricks \code{data.frame}.
+#'
+#' @return \code{TRUE} if all bricks are reachable.
+#'
+.raster.touch <- function(files) {
+
+progress_bar <- length(files) >= getOption(.progress_bar_option, 10)
+
+if (progress_bar) {
+
+pb <- utils::txtProgressBar(min = 0, max = length(files), style = 3)
+    }
+
+for (file in files) {
+
+.raster.open(file)
+
+if (progress_bar) {
+            utils::setTxtProgressBar(pb = pb, value = utils::getTxtProgressBar(pb) + 1)
+        }
+    }
+
+if (progress_bar) {
+        close(pb)
+    }
+
+return(TRUE)
+}
+}
