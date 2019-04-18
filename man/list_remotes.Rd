@@ -4,7 +4,10 @@
 \alias{list_remotes}
 \title{Remotes management functions}
 \usage{
-list_remotes()
+list_remotes(prefix = NULL)
+}
+\arguments{
+\item{prefix}{A \code{character} containing remote name prefix to be filtered.}
 }
 \value{
 A \code{list} of remotes.

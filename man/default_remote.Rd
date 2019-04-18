@@ -6,6 +6,9 @@
 \usage{
 default_remote(default = NULL)
 }
+\arguments{
+\item{default}{A \code{character} text with the new default remote name.}
+}
 \value{
 A \code{character} text with the name of default remote.
 }

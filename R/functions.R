@@ -1,58 +1,63 @@
-.extent_geometries <- function(x, crs) {
+#
+# .get_node <- function(x, ...) {
+#
+#     dots <- list(...)
+#
+#     node_name <- dots[[1]]
+#
+#     if (node_name %in% names(x))
+#         return(x[[node_name]])
+#
+#     x <- Filter(is.list, x)
+#     res <- lapply(x, function(x) do.call(.get_node, args = c(list(x = x), dots)))
+#     res <- Filter(function(x) !is.null(x) && length(x) > 0, res)
+#     if (all(sapply(res, function(x) length(x) <= 1)))
+#         res <- unlist(res)
+#     if ((length(dots) > 1) && (length(res) > 0))
+#         res <- do.call(.get_node, args = c(list(x = res), dots[-1:0]))
+#
+#     return(res)
+# }
+#
+#
+# .get_node2 <- function(x, ...) {
+#
+#     dots <- list(...)
+#
+#     node_name <- dots[[1]]
+#     if (node_name == "*") {
+#         if (length(dots) == 1) return(x)
+#         res <- lapply(x, function(x) do.call(.get_node2, args = c(list(x = x), dots[-1:0])))
+#         if (all(sapply(res, function(x) length(x) <= 1))) res <- unlist(res)
+#         return(res)
+#     }
+#
+#     if (node_name %in% names(x)) {
+#         if (length(dots) == 1) return(x[[node_name]])
+#         return(do.call(.get_node2, args = c(list(x = x[[node_name]]), dots[-1:0])))
+#     }
+#
+#     return(NULL)
+# }
 
-    res <- lapply(x,
-        function(x) {
-            sf::st_polygon(
-                list(matrix(c(x[[1]], x[[2]],
-                              x[[1]], x[[4]],
-                              x[[3]], x[[4]],
-                              x[[3]], x[[2]],
-                              x[[1]], x[[2]]),
-                            ncol = 2, byrow = TRUE)))
-        })
-    sf::st_as_sfc(res, crs = crs)
-}
+#' @title Internal functions
+#'
+#' @name .filter_prefix
+#'
+#' @description Returns a subset of a given named list.
+#'
+#' @param prefix   A \code{character} containing a name prefix to be filtered.
+#' @param named_list   Any named \code{list} containing the data to be filtered.
+#'
+#' @return A \code{list} object containing the read data.
+#'
+.filter_prefix <- function(prefix, named_list) {
 
+    if (is.null(prefix))
+        return(named_list)
 
-.get_node <- function(x, ...) {
-
-    dots <- list(...)
-
-    node_name <- dots[[1]]
-
-    if (node_name %in% names(x))
-        return(x[[node_name]])
-
-    x <- Filter(is.list, x)
-    res <- lapply(x, function(x) do.call(.get_node, args = c(list(x = x), dots)))
-    res <- Filter(function(x) !is.null(x) && length(x) > 0, res)
-    if (all(sapply(res, function(x) length(x) <= 1)))
-        res <- unlist(res)
-    if ((length(dots) > 1) && (length(res) > 0))
-        res <- do.call(.get_node, args = c(list(x = res), dots[-1:0]))
-
-    return(res)
-}
-
-
-.get_node2 <- function(x, ...) {
-
-    dots <- list(...)
-
-    node_name <- dots[[1]]
-    if (node_name == "*") {
-        if (length(dots) == 1) return(x)
-        res <- lapply(x, function(x) do.call(.get_node2, args = c(list(x = x), dots[-1:0])))
-        if (all(sapply(res, function(x) length(x) <= 1))) res <- unlist(res)
-        return(res)
-    }
-
-    if (node_name %in% names(x)) {
-        if (length(dots) == 1) return(x[[node_name]])
-        return(do.call(.get_node2, args = c(list(x = x[[node_name]]), dots[-1:0])))
-    }
-
-    return(NULL)
+    select <- grepl(paste0("^", prefix, ".*$"), names(named_list))
+    return(named_list[select])
 }
 
 #' @title Internal functions

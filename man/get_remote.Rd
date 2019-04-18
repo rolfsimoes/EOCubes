@@ -2,9 +2,10 @@
 % Please edit documentation in R/remotes.R
 \name{get_remote}
 \alias{get_remote}
+\alias{.fetch_remote}
 \title{Remotes management functions}
 \usage{
-get_remote(name)
+.fetch_remote(name)
 }
 \arguments{
 \item{name}{A \code{character} text with remote name.}

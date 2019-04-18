@@ -15,4 +15,4 @@ RoxygenNote: 6.1.1
 Depends:
     jsonlite
 Suggests:
-    parallel
+    sf

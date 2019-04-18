@@ -9,7 +9,7 @@ list_cubes(remote = default_remote(), prefix = NULL)
 \arguments{
 \item{remote}{A \code{remote} data structure.}
 
-\item{prefix}{A \code{character} containing cube name prefix}
+\item{prefix}{A \code{character} containing cube name prefix to be filtered.}
 }
 \value{
 A \code{list} of cubes.

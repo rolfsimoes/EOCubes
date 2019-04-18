@@ -5,15 +5,13 @@
 \alias{.fetch_cube}
 \title{Cubes management functions}
 \usage{
-.fetch_cube(name, remote = default_remote())
+.fetch_cube(cube_ref)
 }
 \arguments{
-\item{name}{A \code{character} text with cube name.}
-
-\item{remote}{A \code{character} text with remote name.}
+\item{cube_ref}{A \code{character} text with cube name.}
 }
 \value{
-A \code{cube} data structure.
+A \code{EOCubes_cube} data structure.
 }
 \description{
 Fetches a registered cube

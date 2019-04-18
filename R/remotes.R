@@ -4,6 +4,8 @@
 #'
 #' @description Fetches the default registered remote.
 #'
+#' @param default   A \code{character} text with the new default remote name.
+#'
 #' @return A \code{character} text with the name of default remote.
 #'
 #' @export
@@ -24,14 +26,14 @@ default_remote <- function(default = NULL) {
 
             error = function(e) {
 
-                message(sprintf(paste(
+                stop(sprintf(paste(
                     "Error when trying to save remotes list file '%s'.",
-                    "Continuing anyway."), file))
+                    "Reported error: %s"), file, e$message))
             })
+
+        return(.global[[.remotes]]$default)
     } else
         stop(sprintf("Remote name '%s' not found", default))
-
-    invisible(TRUE)
 }
 
 #' @title Remotes management functions
@@ -44,17 +46,14 @@ default_remote <- function(default = NULL) {
 #'
 #' @return A \code{remote} data structure.
 #'
-#' @export
-#'
-get_remote <- function(name) {
+.fetch_remote <- function(name) {
 
     if (!(name %in% names(.global[[.remotes]]$remotes)))
         stop(sprintf("Remote name '%s' not found.", name))
-    res <- tryCatch(.open_json(.global[[.remotes]]$remotes[[name]]$href),
-                    error = function(e) {
-                        stop(sprintf("Remote file definition '%s' is unreachable.",
-                                     .global[[.remotes]]$remotes[[name]]$href))
-                    })
+
+    res <- .open_json(.global[[.remotes]]$remotes[[name]]$href)
+
+    res <- structure(res, class = "EOCubes_remote")
     return(res)
 }
 
@@ -64,12 +63,16 @@ get_remote <- function(name) {
 #'
 #' @description Lists all registered remotes.
 #'
+#' @param prefix   A \code{character} containing remote name prefix to be filtered.
+#'
 #' @return A \code{list} of remotes.
 #'
 #' @export
 #'
-list_remotes <- function() {
+list_remotes <- function(prefix = NULL) {
 
-    res <- .global[[.remotes]]$remotes
+    res <- .filter_prefix(prefix, .global[[.remotes]]$remotes)
+
+    res <- structure(res, class = "EOCubes_remotelist")
     return(res)
 }

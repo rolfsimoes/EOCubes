@@ -14,26 +14,18 @@ NULL
 
 # default remotes
 .default_remotes <- list(
-    context = list(
-        remotes = "@index",
-        meta = list(
-            id = "@id",
-            description = "http://schema.org/description"
-        )),
-    version = "0.5",
+    version = "0.6",
     default = "localhost",
     remotes = list(
         eocubes = list(
-            href = "https://eocubes.s3.amazonaws.com/catalog.json",
-            meta = list(
-                id = "eocubes",
-                description = "Cubes maintained and curated by EOCubes team.")),
+            description = "Cubes maintained and curated by EOCubes team.",
+            keywords = c("EOCubes", "INPE"),
+            href = "https://eocubes-test.s3.amazonaws.com/catalog.json"),
         localhost = list(
-            href = sprintf("%s/localhost/catalog.json", .local_base),
-            meta = list(
-                id = "localhost",
-                description = "Local maintained cubes"
-            ))))
+            description = "Local maintained cubes.",
+            keywords = c("Local"),
+            href = sprintf("%s/localhost/catalog.json", .local_base)
+        )))
 
 # load remotes definition
 .load_remotes <- function() {
