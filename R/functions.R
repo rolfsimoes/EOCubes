@@ -74,7 +74,7 @@
 
     con <- tryCatch(url(location), error = function(e) {
         tryCatch(file(location), error = function(e) {
-            stop(sprintf("Invalid file location '%s'", location))
+            stop(sprintf("Invalid file location '%s'", location), call. = FALSE)
         })
     })
 
@@ -84,8 +84,7 @@
                            simplifyMatrix = FALSE),
         error = function(e) {
 
-            stop(sprintf(paste(
-                "Error while opening JSON from '%s'. The file is unreachable."), location))
+            stop(sprintf("Error while opening JSON from '%s'. The file is unreachable.", location), call. = FALSE)
         }, finally = close(con))
 
     return(result)
@@ -109,8 +108,7 @@
         suppressWarnings(jsonlite::write_json(x = x, path = file, pretty = TRUE)),
         error = function(e) {
 
-            stop(sprintf(
-                "Error while saving JSON file '%s'.", file))
+            stop(sprintf("Error while saving JSON file '%s'.", file), call. = FALSE)
         })
 
     return(TRUE)

@@ -1,7 +1,7 @@
 Package: EOCubes
 Type: Package
 Title: Earth Observation Data Cubes Management and Client
-Version: 0.1.20
+Version: 0.6.20
 Author: Rolf Simoes, Gilberto Camara, and Gilberto Ribeiro
 Maintainer: Rolf Simoes <rolf.simoes@inpe.br>
 Description: EOCubes is a package that manages cubes metadata information
@@ -15,4 +15,5 @@ RoxygenNote: 6.1.1
 Depends:
     jsonlite
 Suggests:
-    sf
+    sf,
+    tibble
