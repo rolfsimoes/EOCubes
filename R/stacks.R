@@ -19,9 +19,9 @@
 #' @examples
 #' x <- remote("localhost")
 #' cub1 <- cube("MOD13Q1/006", x)
-#' cub2 <- filter_tiles(cub1, "h13v10")
+#' cub2 <- filter_tiles(cub1, "h12v10")
 #' cub3 <- fetch_tiles(cub2)
-#' stk1 <- stacks(cub3, "2010-09-01", "2011-09-01", c("evi", "ndvi"))
+#' stk1 <- stacks(cub3, "2014-01-01", "2015-01-01", c("evi", "ndvi"))
 #' stacks_length(stk1)
 #' stk2 <- stacks_prune(stk1, 23)
 #'
@@ -64,7 +64,7 @@ stacks <- function(cube, start_dates, end_dates, bands = names(cube_bands(cube =
         cube <- fetch_tiles(cube = cube)
     }
 
-    res <- lapply(cube$tiles, function(tile) {
+    cube$stacks <- lapply(cube$tiles, function(tile) {
 
         slices <- lapply(tile$bands[bands], function(band) {
 
@@ -83,22 +83,37 @@ stacks <- function(cube, start_dates, end_dates, bands = names(cube_bands(cube =
             return(res)
         })
 
-        # rearrange sliced data into stack format
+        # rearrange sliced data into stacks format
         stack <- lapply(interval_names, function(interval) {
-            res <- lapply(bands, function(band) {
+            res <- list()
+            res$bands <- lapply(bands, function(band) {
 
-                return(slices[[band]][[interval]])
+                return(slices[[band]][[interval]]$href)
             })
-            names(res) <- bands
+
+            names(res$bands) <- bands
+
+            timeline <- unique(lapply(bands, function(band) {
+
+                return(slices[[band]][[interval]]$timeline)
+            }))
+
+            if (length(timeline) > 1)
+                stop(sprintf("Inconsistent timelines detected in tile '%s' and interval name '%s'.",
+                             tile$id, interval), call. = FALSE)
+
+            res$timeline <- timeline[[1]]
+
             return(res)
         })
+
         names(stack) <- interval_names
         return(stack)
     })
 
-    res <- structure(res, class = "EOCubes_stacks")
+    class(cube) <- c("EOCubes_stacks", "EOCubes_fetched", "EOCubes_cube")
 
-    return(res)
+    return(cube)
 }
 
 #' @describeIn stacks_functions Returns a list of \code{integer} with the
@@ -113,12 +128,10 @@ stacks_length <- function(stacks) {
     if (!("EOCubes_stacks" %in% class(stacks)))
         stop("You must inform an `EOCubes_stacks` object as data input.")
 
-    res <- lapply(stacks, function(tile) {
+    res <- lapply(stacks$stacks, function(tile) {
         lapply(tile, function(interval) {
-            lapply(interval, function(band) {
 
-                length(band$timeline)
-            })
+            length(interval$timeline)
         })
     })
 
@@ -137,15 +150,11 @@ stacks_prune <- function(stacks, stack_length) {
     if (!("EOCubes_stacks" %in% class(stacks)))
         stop("You must inform an `EOCubes_stacks` object as data input.")
 
-    res <- lapply(stacks, function(tile) {
+    stacks$stacks <- lapply(stacks$stacks, function(tile) {
         Filter(function(interval) {
-            all(sapply(interval, function(band) {
-
-                length(band$timeline) == stack_length
-            }))
+            length(interval$timeline) == stack_length
         }, tile)
     })
 
-    res <- structure(res, class = "EOCubes_stacks")
-    return(res)
+    return(stacks)
 }
