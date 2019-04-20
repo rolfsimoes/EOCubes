@@ -128,23 +128,17 @@ NULL
 #'
 #' @return An \code{EOCubes_cube} object.
 #'
-#' @param ...   Any parameter to be passed to \code{sf::read_sf} function, in
-#' case of \code{geom} is a path to a shapefile.
-#'
 #' @details
 #' The function \code{filter_tiles} requires \code{sf} package.
 #'
 #' @export
 #'
-filter_tiles <- function(cube, prefix = NULL, geom = NULL, ...) {
-
-    if (!requireNamespace("sf", quietly = TRUE))
-        stop("You need `sf` package to run this function.", call. = FALSE)
+filter_tiles <- function(cube, prefix = NULL, geom = NULL) {
 
     if (!("EOCubes_cube" %in% class(cube)))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
-    tiles = list_tiles(cube = cube, prefix = prefix)
+    tiles <- list_tiles(cube = cube, prefix = prefix)
 
     if (is.null(tiles)) {
 
@@ -154,11 +148,17 @@ filter_tiles <- function(cube, prefix = NULL, geom = NULL, ...) {
 
     if (!is.null(geom)) {
 
+        if (!requireNamespace("sf", quietly = TRUE))
+            stop("You need `sf` package to run this function.", call. = FALSE)
+
         if (is.character(geom))
             geom <- sf::read_sf(geom)
 
         if (!any(c("sfc", "sf") %in% class(geom)))
             stop("`geom` parameter must be a `sfc` or `sf` object from `sf` package.", call. = FALSE)
+
+        if (!any(c("POLYGON", "MULTIPOLYGON") %in% as.character(unique(sf::st_geometry_type(geom)))))
+            stop("`geom` parameter must be a `POLYGON` or a `MULTIPOLYGON` geometry type.", call. = FALSE)
 
         geom <- sf::st_transform(geom, crs = cube_crs(cube = cube))
         extents <- tiles_to_sfc(tiles = tiles)
@@ -170,6 +170,9 @@ filter_tiles <- function(cube, prefix = NULL, geom = NULL, ...) {
             cube$tiles <- NULL
             return(cube)
         }
+
+        extents <- extents[selected]
+        cube$geometries <- sf::st_intersection(extents, geom)
 
         tiles <- tiles[selected]
     }
