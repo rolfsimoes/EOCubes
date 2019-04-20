@@ -60,9 +60,9 @@ each stack has the same length given by \code{stack_length}.
 \examples{
 x <- remote("localhost")
 cub1 <- cube("MOD13Q1/006", x)
-cub2 <- filter_tiles(cub1, "h13v10")
+cub2 <- filter_tiles(cub1, "h12v10")
 cub3 <- fetch_tiles(cub2)
-stk1 <- stacks(cub3, "2010-09-01", "2011-09-01", c("evi", "ndvi"))
+stk1 <- stacks(cub3, "2014-01-01", "2015-01-01", c("evi", "ndvi"))
 stacks_length(stk1)
 stk2 <- stacks_prune(stk1, 23)
 

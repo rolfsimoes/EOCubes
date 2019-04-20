@@ -8,7 +8,7 @@
 \alias{tiles_to_sfc}
 \title{Tiles functions}
 \usage{
-filter_tiles(cube, prefix = NULL, geom = NULL, ...)
+filter_tiles(cube, prefix = NULL, geom = NULL)
 
 fetch_tiles(cube)
 
@@ -24,9 +24,6 @@ filtered.}
 
 \item{geom}{A \code{sfc}, a \code{sf} object, or a \code{character}
 path to a shapefile to filter intersecting tiles.}
-
-\item{...}{Any parameter to be passed to \code{sf::read_sf} function, in
-case of \code{geom} is a path to a shapefile.}
 
 \item{tiles}{A \code{EOCubes_tilelist} object.}
 }
