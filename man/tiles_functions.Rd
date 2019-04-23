@@ -2,21 +2,30 @@
 % Please edit documentation in R/cubes.R
 \name{tiles_functions}
 \alias{tiles_functions}
-\alias{filter_tiles}
-\alias{fetch_tiles}
-\alias{list_tiles}
-\alias{tiles_to_sfc}
+\alias{.verify_which}
+\alias{tiles_which}
+\alias{.fetch_tiles}
+\alias{cube_tiles}
+\alias{cube_sfc}
+\alias{.tiles_to_sfc}
 \title{Tiles functions}
 \usage{
-filter_tiles(cube, prefix = NULL, geom = NULL)
+.verify_which(which, cube)
 
-fetch_tiles(cube)
+tiles_which(cube, prefix = NULL, geom = NULL)
 
-list_tiles(cube, prefix = NULL)
+.fetch_tiles(cube, which = NULL, cache = NULL, progress_bar = FALSE)
 
-tiles_to_sfc(tiles)
+cube_tiles(cube, which = NULL)
+
+cube_sfc(cube, which = NULL)
+
+.tiles_to_sfc(cube, which = NULL)
 }
 \arguments{
+\item{which}{A \code{logical} or \code{integer} vector indicating which
+tile to be fetched. If \code{NULL} (default) all tiles are fetched.}
+
 \item{cube}{A \code{EOCubes_cube} object.}
 
 \item{prefix}{A \code{character} vector containing tile name prefix to be
@@ -25,57 +34,78 @@ filtered.}
 \item{geom}{A \code{sfc}, a \code{sf} object, or a \code{character}
 path to a shapefile to filter intersecting tiles.}
 
-\item{tiles}{A \code{EOCubes_tilelist} object.}
+\item{cache}{A \code{logical} or \code{NULL} to enable (\code{TRUE}),
+disable (\code{FALSE}), or proceed the default behavior of (\code{NULL})
+the cache system.}
+
+\item{progress_bar}{A \code{logical} value indicating to show or not a
+progress bar while fetching tiles.}
 }
 \value{
-An \code{EOCubes_cube} object.
+Either a \code{logical} or \code{integer} vector.
 
-An \code{EOCubes_fetched, EOCubes_cube} object.
+A \code{logical} vector.
+
+An \code{EOCubes_tiles} object.
 
 An \code{EOCubes_tilelist} object or \code{NULL} if no tile
-satisfies the filter criteria
+satisfies the \code{which} criteria.
 
-A \code{sfc} object.
+A \code{sfc} object from \code{sf} package.
+
+A \code{sfc} object from \code{sf} package.
 }
 \description{
 These functions provide operations to work with tiles
 registered in cubes.
 }
 \details{
-The function \code{filter_tiles} requires \code{sf} package.
+The function \code{.verify_which} is a internal function used to verify the
+consistency of \code{which} parameter of some tiles functions.
+
+The function \code{tiles_which} requires \code{sf} package to compute
+intersection. It can be used in \code{which} parameter of functions
+\code{\link{cube_tiles}}, \code{\link{stack_tiles}}, \code{\link{tiles_which}}
 
 Fetching tiles can be an expensive task. You can filter tiles that intersects
-your studing area before the fetching procedure using \code{filter_tiles}
-function.
+your area of interest by providing \code{which} parameter.
+
+The function \code{cubes_sfc} requires \code{sf} package.
 
 The function \code{tiles_to_sfc} requires \code{sf} package.
 }
 \section{Functions}{
 \itemize{
-\item \code{filter_tiles}: Returns a \code{EOCubes_cube} with tiles that
-intersects the \code{geom} object.
+\item \code{.verify_which}: Verifies if which parameter is valid for a given
+list of tiles.
 
-\item \code{fetch_tiles}: Fetches all registered tiles in a cube.
+\item \code{tiles_which}: Returns a \code{logical} vector indicating
+selected tiles that satisfies filter.
 
-\item \code{list_tiles}: Lists all registered tiles in a cube.
+\item \code{.fetch_tiles}: Fetches tiles in a cube.
 
-\item \code{tiles_to_sfc}: Converts tiles extents to a \code{sfc} object.
+\item \code{cube_tiles}: Lists all registered tiles in a cube.
+
+\item \code{cube_sfc}: Returns all tiles extents in a \code{sfc} object.
+
+\item \code{.tiles_to_sfc}: Converts tiles extents to a \code{sfc} object.
 }}
 
 \examples{
 x <- remote("localhost")
 cub1 <- cube("MOD13Q1/006", x)
-y <- list_tiles(cub1, "h13v10") # select 'h13v10' tile
+tiles_index <- tiles_which(cub1, "h13v10")   # select 'h13v10' tile
 
-if (require("tibble") && require("sf")) { # required by `sf`
+# required by sf package
+if (require("tibble") && require("sf")) {
 
-   tiles_to_sfc(y)  # requires `sf` package
+   cube_sfc(cub1, which = tiles_index)
    file <- system.file("shape/example.shp", package = "EOCubes")
-   cub2 <- filter_tiles(cub1, geom = file)  # requires `sf` package
-   list_tiles(cub2)
+   tiles_index <- tiles_which(cub1, geom = file)   # select all tiles that intersect shapefile
+   cube_sfc(cub1, which = tiles_index)
 }
 
 }
 \seealso{
-\code{\link{remote}}, \code{\link{cube}}
+\code{\link{remote}}, \code{\link{cube}}, \code{\link{cube_tiles}}
 }

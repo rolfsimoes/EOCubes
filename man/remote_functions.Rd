@@ -6,21 +6,26 @@
 \alias{remote}
 \alias{default_remote}
 \alias{remote_name}
+\alias{list_cubes}
 \title{Remotes functions}
 \usage{
 list_remotes(prefix = NULL)
 
-remote(name)
+remote(name, cache = TRUE)
 
-default_remote(default = NULL)
+default_remote(default = NULL, cache = TRUE)
 
 remote_name(remote)
+
+list_cubes(remote = default_remote(), prefix = NULL)
 }
 \arguments{
-\item{prefix}{A \code{character} containing remote name prefix to be
-filtered.}
+\item{prefix}{A \code{character} containing remote/cube entry name
+prefix to be filtered.}
 
 \item{name}{A \code{character} text with remote name.}
+
+\item{cache}{A \code{logical} value indicating wether to use cache system.}
 
 \item{default}{A \code{character} text with the new default remote name.}
 
@@ -31,13 +36,33 @@ A \code{list} of remotes.
 
 A \code{remote} data structure.
 
-A \code{character} text with the name of default remote.
+A \code{EOCubes_remote} object.
 
 A \code{character}.
+
+An \code{EOCubes_cubelist} object or \code{NULL} if no cube
+satisfies the filter criteria.
 }
 \description{
 These functions provides a basic operations over remotes.
 A remote is an entry point to a cube provider that can maintain many cubes.
+}
+\details{
+The function \code{list_remotes} lists all registered remote
+entries. Use \code{prefix} parameter to filter the entries by name.
+
+The function \code{remote} fetches the remote registered on a given
+entry \code{name}.
+
+The function \code{default_remote} fetches the default remote in
+the remote list. The default remote can be changed by providing a valid
+remote name in \code{default} parameter.
+
+The function \code{remote_name} show the entry name of the remote
+list from which the \code{EOCubes_remote} object have been fetched.
+
+The function \code{list_cubes} lists all registered cubes entries
+in a remote. Use \code{prefix} parameter to filter the entries by name.
 }
 \section{Functions}{
 \itemize{
@@ -48,12 +73,15 @@ A remote is an entry point to a cube provider that can maintain many cubes.
 \item \code{default_remote}: Fetches the default registered remote.
 
 \item \code{remote_name}: Returns the name of a remote or a cube.
+
+\item \code{list_cubes}: Lists all registered cubes in a remote.
 }}
 
 \examples{
 list_remotes()
 x <- remote("localhost")
-remote_name(x)  # shows 'localhost'
+remote_name(x)   # shows 'localhost'
+list_cubes(x)   # list cubes in 'localhost'
 
 }
 \seealso{
