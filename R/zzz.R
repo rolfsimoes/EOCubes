@@ -1,20 +1,18 @@
 #' @importFrom jsonlite write_json fromJSON
+#' @importFrom pbmcapply pbmclapply
 #'
 NULL
 
 # global environment used for configuration
 .global = new.env()
+.cache = new.env()
 
-# global entries
-.remotes = "remotes"
-.cubes = "cubes"
-
-# constants files
-.local_base   = "~/.EOCubes"
+# global constant
+.local_base = "~/.EOCubes"
 
 # default remotes
 .default_remotes <- list(
-    version = "0.6",
+    version = "0.7",
     default = "localhost",
     remotes = list(
         eocubes = list(
@@ -24,22 +22,24 @@ NULL
         localhost = list(
             description = "Local maintained cubes.",
             keywords = c("Local"),
-            href = sprintf("%s/localhost/catalog.json", .local_base)
+            href = path.expand(sprintf("%s/localhost/catalog.json", .local_base))
         )))
 
 # load remotes definition
 .load_remotes <- function() {
 
-    if (!dir.exists(.local_base)) {
+    base <- path.expand(.local_base)
 
-        message(sprintf("Creating the config directory '%s'.", .local_base))
-        suppressWarnings(dir.create(.local_base, showWarnings = FALSE))
+    if (!dir.exists(base)) {
+
+        message(sprintf("Creating the config directory '%s'.", base))
+        suppressWarnings(dir.create(base, showWarnings = FALSE))
     }
 
-    file <- sprintf("%s/remotes.json", .local_base)
+    file <- sprintf("%s/root.json", base)
 
     remotes <- tryCatch(
-        .open_json(file),
+        .open_json(file, cache = FALSE),
         error = function(e) {
 
             message(sprintf(paste(
@@ -48,10 +48,10 @@ NULL
             return(.default_remotes)
         })
 
-    .global[[.remotes]] <- remotes
+    .global[["root"]] <- remotes
 
     tryCatch(
-        .save_json(.global[[.remotes]], file),
+        .save_json(.global[["root"]], file),
 
         error = function(e) {
 
@@ -63,8 +63,27 @@ NULL
     invisible(TRUE)
 }
 
+.load_cache <- function() {
+
+    base <- path.expand(.local_base)
+
+    if (!dir.exists(base)) {
+
+        message(sprintf("Creating the config directory '%s'.", base))
+        suppressWarnings(dir.create(base, showWarnings = FALSE))
+    }
+
+    file <- sprintf("%s/cache.RData", base)
+
+    if (file.exists(file))
+        load(file, .cache)
+
+    invisible(TRUE)
+}
+
 # on load
 .onLoad <- function(lib, pkg) {
 
     .load_remotes()
+    .load_cache()
 }

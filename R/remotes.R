@@ -5,17 +5,20 @@
 #' @description These functions provides a basic operations over remotes.
 #' A remote is an entry point to a cube provider that can maintain many cubes.
 #'
-#' @param prefix   A \code{character} containing remote name prefix to be
-#' filtered.
+#' @param prefix   A \code{character} containing remote/cube entry name
+#' prefix to be filtered.
 #' @param name   A \code{character} text with remote name.
+#' @param cache   A \code{logical} value indicating wether to use cache system.
 #' @param default   A \code{character} text with the new default remote name.
 #' @param remote   An \code{EOCubes_remote} object.
 #'
 #' @seealso \code{\link{list_cubes}}
+#'
 #' @examples
 #' list_remotes()
 #' x <- remote("localhost")
-#' remote_name(x)  # shows 'localhost'
+#' remote_name(x)   # shows 'localhost'
+#' list_cubes(x)   # list cubes in 'localhost'
 #'
 NULL
 
@@ -23,13 +26,34 @@ NULL
 #'
 #' @return A \code{list} of remotes.
 #'
+#' @details The function \code{list_remotes} lists all registered remote
+#' entries. Use \code{prefix} parameter to filter the entries by name.
+#'
 #' @export
 #'
 list_remotes <- function(prefix = NULL) {
 
-    res <- .filter_prefix(prefix, .global[[.remotes]]$remotes)
+    if (length(.global[["root"]]$remotes) == 0) {
 
-    res <- structure(res, class = "EOCubes_remotelist")
+        warning("No remote registered.", call. = FALSE)
+        invisible(NULL)
+    }
+
+    if (is.null(prefix)) {
+
+        res <- structure(.global[["root"]]$remotes, class = "EOCubes_remotelist")
+        return(res)
+    }
+
+    selected <- .select_prefix(prefix, .global[["root"]]$remotes)
+
+    if (!any(selected)) {
+
+        warning(sprintf("No remote with prefix '%s' was found.", prefix), call. = FALSE)
+        invisible(NULL)
+    }
+
+    res <- structure(.global[["root"]]$remotes[selected], class = "EOCubes_remotelist")
     return(res)
 }
 
@@ -37,38 +61,45 @@ list_remotes <- function(prefix = NULL) {
 #'
 #' @return A \code{remote} data structure.
 #'
+#' @details The function \code{remote} fetches the remote registered on a given
+#' entry \code{name}.
+#'
 #' @export
 #'
-remote <- function(name) {
+remote <- function(name, cache = TRUE) {
 
-    if (!(name %in% names(.global[[.remotes]]$remotes)))
+    if (!(name %in% names(.global[["root"]]$remotes)))
         stop(sprintf("Remote name '%s' not found.", name), call. = FALSE)
 
-    res <- .open_json(.global[[.remotes]]$remotes[[name]]$href)
+    res <- .open_json(.global[["root"]]$remotes[[name]]$href, cache = cache)
 
-    res <- structure(res, remote_name = name, class = "EOCubes_remote")
+    res <- structure(res, caching = cache, remote_name = name, class = "EOCubes_remote")
     return(res)
 }
 
 #' @describeIn remote_functions Fetches the default registered remote.
 #'
-#' @return A \code{character} text with the name of default remote.
+#' @return A \code{EOCubes_remote} object.
+#'
+#' @details The function \code{default_remote} fetches the default remote in
+#' the remote list. The default remote can be changed by providing a valid
+#' remote name in \code{default} parameter.
 #'
 #' @export
 #'
-default_remote <- function(default = NULL) {
+default_remote <- function(default = NULL, cache = TRUE) {
 
     if (missing(default))
-        return(remote(.global[[.remotes]]$default))
+        return(remote(.global[["root"]]$default, cache = cache))
 
-    if (default %in% names(.global[[.remotes]]$remotes)) {
+    if (default %in% names(.global[["root"]]$remotes)) {
 
-        .global[[.remotes]]$default <- default
+        .global[["root"]]$default <- default
 
-        file <- sprintf("%s/remotes.json", .local_base)
+        file <- sprintf("%s/root.json", .local_base)
 
         tryCatch(
-            .save_json(.global[[.remotes]], file),
+            .save_json(.global[["root"]], file),
 
             error = function(e) {
 
@@ -77,7 +108,7 @@ default_remote <- function(default = NULL) {
                     "Reported error: %s"), file, e$message), call. = FALSE)
             })
 
-        return(remote(.global[[.remotes]]$default))
+        return(remote(.global[["root"]]$default), cache = cache)
     } else
         stop(sprintf("Remote name '%s' not found", default), call. = FALSE)
 }
@@ -86,50 +117,58 @@ default_remote <- function(default = NULL) {
 #'
 #' @return A \code{character}.
 #'
+#' @details The function \code{remote_name} show the entry name of the remote
+#' list from which the \code{EOCubes_remote} object have been fetched.
+#'
 #' @export
 #'
 remote_name <- function(remote) {
 
-    if (!any(c("EOCubes_remote", "EOCubes_cube") %in% class(remote)))
+    if (!inherits(remote, "EOCubes_remote"))
         stop("You must inform an `EOCubes_remote` object as data input.", call. = FALSE)
 
-    return(attr(remote, "remote_name"))
+    res <- attr(remote, "remote_name")
+    return(res)
 }
 
-#' @title Remote functions
-#'
-#' @name list_cubes
-#'
-#' @description Lists all registered cubes in a remote.
-#'
-#' @param remote   An \code{EOCubes_remote} object.
-#' @param prefix   A \code{character} containing cube name prefix to be
-#' filtered.
+#' @describeIn remote_functions Lists all registered cubes in a remote.
 #'
 #' @return An \code{EOCubes_cubelist} object or \code{NULL} if no cube
 #' satisfies the filter criteria.
 #'
-#' @examples
-#' list_cubes()  # list cubes from default remote
+#' @details The function \code{list_cubes} lists all registered cubes entries
+#' in a remote. Use \code{prefix} parameter to filter the entries by name.
 #'
 #' @export
 #'
 list_cubes <- function(remote = default_remote(), prefix = NULL) {
 
-    if (!("EOCubes_remote" %in% class(remote)))
+    if (!inherits(remote, "EOCubes_remote"))
         stop("You must inform an `EOCubes_remote` object as data input.", call. = FALSE)
 
     if (missing(remote))
         message(sprintf("Listing cubes of default remote: '%s'.", remote_name(remote)))
 
-    res <- .filter_prefix(prefix, remote$cubes)
+    if (length(remote$cubes) == 0) {
 
-    if (length(res) == 0) {
+        warning("The remote has no cube.", call. = FALSE)
+        invisible(NULL)
+    }
+
+    if (is.null(prefix)) {
+
+        res <- structure(remote$cubes, class = "EOCubes_cubelist")
+        return(res)
+    }
+
+    selected <- .select_prefix(prefix, remote$cubes)
+
+    if (!any(selected)) {
 
         warning(sprintf("No cube with prefix '%s' was found.", prefix), call. = FALSE)
         invisible(NULL)
     }
 
-    res <- structure(res, class = "EOCubes_cubelist")
+    res <- structure(remote$cubes[selected], class = "EOCubes_cubelist")
     return(res)
 }

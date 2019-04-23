@@ -1,21 +1,22 @@
 #' @title Internal functions
 #'
-#' @name .filter_prefix
+#' @name .select_prefix
 #'
-#' @description Returns a subset of a given named list.
+#' @description Returns a \code{logical} vector indicating which elements in
+#' named list are selected.
 #'
 #' @param prefix   A \code{character} containing a name prefix to be filtered.
 #' @param named_list   Any named \code{list} containing the data to be filtered.
 #'
-#' @return A \code{list} object containing the read data.
+#' @return A \code{logical} vector.
 #'
-.filter_prefix <- function(prefix, named_list) {
+.select_prefix <- function(prefix, named_list) {
 
     if (is.null(prefix))
-        return(named_list)
+        return(rep(TRUE, length(named_list)))
 
     select <- grepl(paste0("^", prefix, ".*$"), names(named_list))
-    return(named_list[select])
+    return(select)
 }
 
 #' @title Internal functions
@@ -25,10 +26,14 @@
 #' @description Open a json file and return its structure as a \code{list}.
 #'
 #' @param location   A \code{character} text indicating a file path (local or in the web) to be opened.
+#' @param cache   A \code{logical} indicating if result can be retrieved from cache.
 #'
 #' @return A \code{list} object containing the read data.
 #'
-.open_json <- function(location) {
+.open_json <- function(location, cache) {
+
+    if (cache && exists(location, .cache, inherits = FALSE))
+        return(.cache[[location]]$content)
 
     con <- tryCatch(url(location), error = function(e) {
         tryCatch(file(location), error = function(e) {
@@ -42,12 +47,46 @@
                            simplifyMatrix = FALSE),
         error = function(e) {
 
-            stop(sprintf("Error while opening JSON from '%s'. The file is unreachable.", location), call. = FALSE)
+            stop(sprintf(paste("Error while opening JSON from '%s'.",
+                               "Reported error: %s"), location, e$message), call. = FALSE)
         }, finally = close(con))
+
+    if (cache)
+        .cache[[location]] <- list(content = result, timestamp = Sys.time())
 
     return(result)
 }
 
+#' @title Internal functions
+#'
+#' @name .open_multiple_jsons
+#'
+#' @description Open a json file and return its structure as a \code{list}.
+#'
+#' @param locations   A \code{character} text indicating a file path (local or in the web) to be opened.
+#' @param cache   A \code{logical} indicating if result can be retrieved from cache.
+#' @param progress_bar   A \code{logical} indicating if a progress bar must be created.
+#'
+#' @return A \code{list} object containing the read data.
+#'
+.open_multiple_jsons <- function(locations, cache, progress_bar) {
+
+    if (progress_bar)
+        pb <- utils::txtProgressBar(max = length(locations), style = 3)
+
+    res <- lapply(locations, function(location) {
+
+        if (progress_bar)
+            utils::setTxtProgressBar(pb = pb, value = utils::getTxtProgressBar(pb) + 1)
+
+        .open_json(location = location, cache = cache)
+    })
+
+    if (progress_bar)
+        close(pb)
+
+    return(res)
+}
 
 #' @title Internal functions
 #'
@@ -133,84 +172,84 @@
 #'     return(TRUE)
 #' }
 
-#' @title Internal functions
+#' #' @title Internal functions
+#' #'
+#' #' @name .is_empty
+#' #'
+#' #' @description Checks if a value is empty. The meaning of empty state depends on \code{x} class.
+#' #' If \code{x} is a \code{data.frame}, the object is empty if it has zero columns or zero rows.
+#' #' If \code{x} is a \code{character} vector, it is empty if \code{x} has length zero, has at least one \code{NA},
+#' #' or \code{""} value. If \code{x} is a \code{numeric} vector, it is empty if it has length zero or has
+#' #' at least one \code{NA} as its element. If \code{x} is a \code{list}, it is empty if it has length zero.
+#' #' Otherwise, it is empty if it is \code{NULL} or has length zero.
+#' #'
+#' #' @param x   Any object to be tested.
+#' #'
+#' #' @return \code{TRUE} if \code{x} is empty. \code{FALSE} otherwise.
+#' #'
+#' .is_empty <- function(x) {
+#'     UseMethod(".is_empty", x)
+#' }
 #'
-#' @name .is_empty
+#' #' @title Internal functions
+#' #'
+#' #' @name .is_empty.default
+#' #'
+#' #' @param x   Any object to be tested.
+#' #'
+#' #' @return \code{TRUE} if \code{x} is \code{NULL}. \code{FALSE} otherwise.
+#' #'
+#' .is_empty.default <- function(x) {
+#'     is.null(x) || length(x) == 0
+#' }
 #'
-#' @description Checks if a value is empty. The meaning of empty state depends on \code{x} class.
-#' If \code{x} is a \code{data.frame}, the object is empty if it has zero columns or zero rows.
-#' If \code{x} is a \code{character} vector, it is empty if \code{x} has length zero, has at least one \code{NA},
-#' or \code{""} value. If \code{x} is a \code{numeric} vector, it is empty if it has length zero or has
-#' at least one \code{NA} as its element. If \code{x} is a \code{list}, it is empty if it has length zero.
-#' Otherwise, it is empty if it is \code{NULL} or has length zero.
+#' #' @title Internal functions
+#' #'
+#' #' @name .is_empty.data.frame
+#' #'
+#' #' @param x   A \code{data.frame} object to be tested.
+#' #'
+#' #' @return \code{TRUE} if \code{data.frame} has zero columns or zero rows. \code{FALSE} otherwise.
+#' #'
+#' .is_empty.data.frame <- function(x) {
+#'     length(x) == 0 || nrow(x) == 0
+#' }
 #'
-#' @param x   Any object to be tested.
+#' #' @title Internal functions
+#' #'
+#' #' @name .is_empty.character
+#' #'
+#' #' @param x   A \code{character} vector to be tested.
+#' #'
+#' #' @return \code{TRUE} if \code{x} has length zero, has at least one \code{NA}, or \code{""} value. \code{FALSE} otherwise.
+#' #'
+#' .is_empty.character <- function(x) {
+#'     length(x) == 0 || any(is.na(x)) || any(trimws(x) == "")
+#' }
 #'
-#' @return \code{TRUE} if \code{x} is empty. \code{FALSE} otherwise.
+#' #' @title Internal functions
+#' #'
+#' #' @name .is_empty.numeric
+#' #'
+#' #' @param x   A \code{numeric} vector to be tested.
+#' #'
+#' #' @return \code{TRUE} if \code{x} has length zero or has at least one \code{NA}. \code{FALSE} otherwise.
+#' #'
+#' .is_empty.numeric <- function(x) {
+#'     length(x) == 0 || any(is.na(x))
+#' }
 #'
-.is_empty <- function(x) {
-    UseMethod(".is_empty", x)
-}
-
-#' @title Internal functions
-#'
-#' @name .is_empty.default
-#'
-#' @param x   Any object to be tested.
-#'
-#' @return \code{TRUE} if \code{x} is \code{NULL}. \code{FALSE} otherwise.
-#'
-.is_empty.default <- function(x) {
-    is.null(x) || length(x) == 0
-}
-
-#' @title Internal functions
-#'
-#' @name .is_empty.data.frame
-#'
-#' @param x   A \code{data.frame} object to be tested.
-#'
-#' @return \code{TRUE} if \code{data.frame} has zero columns or zero rows. \code{FALSE} otherwise.
-#'
-.is_empty.data.frame <- function(x) {
-    length(x) == 0 || nrow(x) == 0
-}
-
-#' @title Internal functions
-#'
-#' @name .is_empty.character
-#'
-#' @param x   A \code{character} vector to be tested.
-#'
-#' @return \code{TRUE} if \code{x} has length zero, has at least one \code{NA}, or \code{""} value. \code{FALSE} otherwise.
-#'
-.is_empty.character <- function(x) {
-    length(x) == 0 || any(is.na(x)) || any(trimws(x) == "")
-}
-
-#' @title Internal functions
-#'
-#' @name .is_empty.numeric
-#'
-#' @param x   A \code{numeric} vector to be tested.
-#'
-#' @return \code{TRUE} if \code{x} has length zero or has at least one \code{NA}. \code{FALSE} otherwise.
-#'
-.is_empty.numeric <- function(x) {
-    length(x) == 0 || any(is.na(x))
-}
-
-#' @title Internal functions
-#'
-#' @name .is_empty.list
-#'
-#' @param x   A \code{list} to be tested.
-#'
-#' @return \code{TRUE} if \code{x} has length zero. \code{FALSE} otherwise.
-#'
-.is_empty.list <- function(x) {
-    length(x) == 0
-}
+#' #' @title Internal functions
+#' #'
+#' #' @name .is_empty.list
+#' #'
+#' #' @param x   A \code{list} to be tested.
+#' #'
+#' #' @return \code{TRUE} if \code{x} has length zero. \code{FALSE} otherwise.
+#' #'
+#' .is_empty.list <- function(x) {
+#'     length(x) == 0
+#' }
 
 #' @title Internal functions
 #'

@@ -4,22 +4,34 @@
 \alias{cube_functions}
 \alias{cube}
 \alias{cube_name}
+\alias{cube_remote}
 \alias{cube_bands}
 \alias{cube_crs}
+\alias{cube_bbox}
+\alias{cube_raster_info}
+\alias{cube_dates_info}
 \title{Cube functions}
 \usage{
 cube(name, remote = default_remote())
 
 cube_name(cube)
 
+cube_remote(cube)
+
 cube_bands(cube)
 
 cube_crs(cube)
+
+cube_bbox(cube)
+
+cube_raster_info(cube)
+
+cube_dates_info(cube)
 }
 \arguments{
 \item{name}{A \code{character} text with cube name.}
 
-\item{remote}{A \code{character} text with remote name.}
+\item{remote}{An \code{EOCubes_remote} object.}
 
 \item{cube}{An \code{EOCubes_cube} object.}
 }
@@ -28,13 +40,34 @@ An \code{EOCubes_cube} object.
 
 A \code{character} string.
 
+A \code{character} string.
+
 An \code{EOCubes_bandlist} object.
 
 A \code{character} string.
+
+A \code{list} object.
+
+A \code{list} object.
+
+A \code{list} object.
 }
 \description{
 These functions provides the basic operations over a cube
 (\code{EOCubes_cube}) object.
+}
+\details{
+The function \code{cube_extent} access the metadata field 'extent'
+of an \code{EOCubes_cube} object that contains \code{xmin}, \code{ymin},
+\code{xmax}, and \code{ymax} values.
+
+The function \code{cube_raster_info} access the metadata field
+'raster' of an \code{EOCubes_cube} object that contains \code{size} (pixels)
+and \code{resolution} (CRS units per pixel) values.
+
+The function \code{cube_dates_info} access the metadata field
+'interval' of an \code{EOCubes_cube} object that contains \code{from}
+and \code{to} dates interval that encompass cube layers values.
 }
 \section{Functions}{
 \itemize{
@@ -42,17 +75,30 @@ These functions provides the basic operations over a cube
 
 \item \code{cube_name}: Returns the name of a cube.
 
+\item \code{cube_remote}: Returns the name of the remote entry from which
+the cube have been fetched.
+
 \item \code{cube_bands}: Lists the all registered bands in a cube.
 
 \item \code{cube_crs}: Get the registered coordinate reference system (CRS) of a cube.
+
+\item \code{cube_bbox}: Get the extent of a cube.
+
+\item \code{cube_raster_info}: Get the raster size and resolution of a cube.
+
+\item \code{cube_dates_info}: Get the date interval (min, max) of all
+registered tiles in a cube.
 }}
 
 \examples{
 x <- remote("localhost")
 cub1 <- cube("MOD13Q1/006", x)
 cube_name(cub1)   # show the entry name 'MOD13Q1/006'
-cube_bands(cub1)  # show bands and its meta data
-cube_crs(cub1)    # show crs string
+cube_remote(cub1)   # show the remote entry name 'localhost'
+cube_bands(cub1)   # show bands and its meta data
+cube_crs(cub1)   # show CRS string
+cube_bbox(cub1)   # show bbox values
+cube_raster_info(cub1)   # show raster size and pixel resolution
 
 }
 \seealso{

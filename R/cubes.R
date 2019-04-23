@@ -3,7 +3,7 @@
 #' @name cube_functions
 #'
 #' @param name   A \code{character} text with cube name.
-#' @param remote   A \code{character} text with remote name.
+#' @param remote   An \code{EOCubes_remote} object.
 #' @param cube   An \code{EOCubes_cube} object.
 #'
 #' @description These functions provides the basic operations over a cube
@@ -15,8 +15,11 @@
 #' x <- remote("localhost")
 #' cub1 <- cube("MOD13Q1/006", x)
 #' cube_name(cub1)   # show the entry name 'MOD13Q1/006'
-#' cube_bands(cub1)  # show bands and its meta data
-#' cube_crs(cub1)    # show crs string
+#' cube_remote(cub1)   # show the remote entry name 'localhost'
+#' cube_bands(cub1)   # show bands and its meta data
+#' cube_crs(cub1)   # show CRS string
+#' cube_bbox(cub1)   # show bbox values
+#' cube_raster_info(cub1)   # show raster size and pixel resolution
 #'
 NULL
 
@@ -28,7 +31,7 @@ NULL
 #'
 cube <- function(name, remote = default_remote()) {
 
-    if (!("EOCubes_remote" %in% class(remote)))
+    if (!inherits(remote, "EOCubes_remote"))
         stop("You must inform an `EOCubes_remote` object as data input.", call. = FALSE)
 
     if (missing(remote))
@@ -37,12 +40,18 @@ cube <- function(name, remote = default_remote()) {
     if (!(name %in% names(remote$cubes)))
         stop(sprintf("Cube '%s' not found in remote '%s'.", name, remote_name(remote)), call. = FALSE)
 
-    res <- .open_json(remote$cubes[[name]]$href)
+    res <- .open_json(remote$cubes[[name]]$href, cache = is.caching(remote))
 
     res <- structure(res,
                      cube_name = name,
                      remote_name = remote_name(remote),
+                     caching = is.caching(remote),
                      class = "EOCubes_cube")
+
+    if (requireNamespace("sf", quietly = TRUE)) {
+
+        attr(res, "sfc") <- .tiles_to_sfc(cube = res)
+    }
 
     return(res)
 }
@@ -55,10 +64,25 @@ cube <- function(name, remote = default_remote()) {
 #'
 cube_name <- function(cube) {
 
-    if (!("EOCubes_cube" %in% class(cube)))
+    if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
     return(attr(cube, "cube_name"))
+}
+
+#' @describeIn cube_functions Returns the name of the remote entry from which
+#' the cube have been fetched.
+#'
+#' @return A \code{character} string.
+#'
+#' @export
+#'
+cube_remote <- function(cube) {
+
+    if (!inherits(cube, "EOCubes_cube"))
+        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
+
+    return(attr(cube, "remote_name"))
 }
 
 #' @describeIn cube_functions Lists the all registered bands in a cube.
@@ -69,10 +93,21 @@ cube_name <- function(cube) {
 #'
 cube_bands <- function(cube) {
 
-    if (!("EOCubes_cube" %in% class(cube)))
+    if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
     res <- cube$meta$bands
+    if (is.null(res))
+        stop("Cube definition doesn't have a valid 'meta/bands' field.")
+
+    res <- lapply(res, function(band) {
+
+        band$min <- suppressWarnings(as.numeric(band$min))
+        band$max <- suppressWarnings(as.numeric(band$max))
+        band$fill <- suppressWarnings(as.numeric(band$fill))
+        band$scale <- suppressWarnings(as.numeric(band$scale))
+        return(band)
+    })
 
     res <- structure(res, class = "EOCubes_bandlist")
     return(res)
@@ -86,10 +121,88 @@ cube_bands <- function(cube) {
 #'
 cube_crs <- function(cube) {
 
-    if (!("EOCubes_cube" %in% class(cube)))
+    if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
+    res <- cube$meta$crs$properties$name
+    if (is.null(res))
+        stop("Cube definition doesn't have a valid 'meta/crs' field.")
+
     return(cube$meta$crs$properties$name)
+}
+
+#' @describeIn cube_functions Get the extent of a cube.
+#'
+#' @return A \code{list} object.
+#'
+#' @details The function \code{cube_extent} access the metadata field 'extent'
+#' of an \code{EOCubes_cube} object that contains \code{xmin}, \code{ymin},
+#' \code{xmax}, and \code{ymax} values.
+#'
+#' @export
+#'
+cube_bbox <- function(cube) {
+
+    if (!inherits(cube, "EOCubes_cube"))
+        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
+
+    res <- cube$meta$extent$bbox
+    if (is.null(res) || length(res) != 4)
+        stop("Cube definition doesn't have a valid 'meta/extent/bbox' field.")
+
+    return(res)
+}
+
+#' @describeIn cube_functions Get the raster size and resolution of a cube.
+#'
+#' @return A \code{list} object.
+#'
+#' @details The function \code{cube_raster_info} access the metadata field
+#' 'raster' of an \code{EOCubes_cube} object that contains \code{size} (pixels)
+#' and \code{resolution} (CRS units per pixel) values.
+#'
+#' @export
+#'
+cube_raster_info <- function(cube) {
+
+    if (!inherits(cube, "EOCubes_cube"))
+        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
+
+    res <- cube$meta$raster
+    if (is.null(res))
+        stop("Cube definition doesn't have a valid 'meta/raster' field.")
+
+    return(res)
+}
+
+#' @describeIn cube_functions Get the date interval (min, max) of all
+#' registered tiles in a cube.
+#'
+#' @return A \code{list} object.
+#'
+#' @details The function \code{cube_dates_info} access the metadata field
+#' 'interval' of an \code{EOCubes_cube} object that contains \code{from}
+#' and \code{to} dates interval that encompass cube layers values.
+#'
+#' @export
+#'
+cube_dates_info <- function(cube) {
+
+    if (!inherits(cube, "EOCubes_cube"))
+        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
+
+    res <- cube$meta$interval
+    if (is.null(res))
+        stop("Cube definition doesn't have a valid 'meta/interval' field.", call. = FALSE)
+
+    tryCatch({
+        res$from <- as.Date(res$from, "%Y-%m-%d")
+        res$to <- as.Date(res$to, "%Y-%m-%d")
+    }, error = function(e) {
+
+        stop("Cube definition doesn't have a valid 'meta/interval' field.", call. = FALSE)
+    })
+    return(res)
 }
 
 #' @title Tiles functions
@@ -102,171 +215,219 @@ cube_crs <- function(cube) {
 #' @param cube   A \code{EOCubes_cube} object.
 #' @param geom   A \code{sfc}, a \code{sf} object, or a \code{character}
 #' path to a shapefile to filter intersecting tiles.
+#' @param which   A \code{logical} or \code{integer} vector indicating which
+#' tile to be fetched. If \code{NULL} (default) all tiles are fetched.
 #' @param prefix   A \code{character} vector containing tile name prefix to be
 #' filtered.
-#' @param tiles   A \code{EOCubes_tilelist} object.
 #'
-#' @seealso \code{\link{remote}}, \code{\link{cube}}
+#' @seealso \code{\link{remote}}, \code{\link{cube}}, \code{\link{cube_tiles}}
 #'
 #' @examples
 #' x <- remote("localhost")
 #' cub1 <- cube("MOD13Q1/006", x)
-#' y <- list_tiles(cub1, "h13v10") # select 'h13v10' tile
+#' tiles_index <- tiles_which(cub1, "h13v10")   # select 'h13v10' tile
 #'
-#' if (require("tibble") && require("sf")) { # required by `sf`
+#' # required by sf package
+#' if (require("tibble") && require("sf")) {
 #'
-#'    tiles_to_sfc(y)  # requires `sf` package
+#'    cube_sfc(cub1, which = tiles_index)
 #'    file <- system.file("shape/example.shp", package = "EOCubes")
-#'    cub2 <- filter_tiles(cub1, geom = file)  # requires `sf` package
-#'    list_tiles(cub2)
+#'    tiles_index <- tiles_which(cub1, geom = file)   # select all tiles that intersect shapefile
+#'    cube_sfc(cub1, which = tiles_index)
 #' }
 #'
 NULL
 
-#' @describeIn tiles_functions Returns a \code{EOCubes_cube} with tiles that
-#' intersects the \code{geom} object.
+#' @describeIn tiles_functions Verifies if which parameter is valid for a given
+#' list of tiles.
 #'
-#' @return An \code{EOCubes_cube} object.
+#' @return Either a \code{logical} or \code{integer} vector.
 #'
 #' @details
-#' The function \code{filter_tiles} requires \code{sf} package.
+#' The function \code{.verify_which} is a internal function used to verify the
+#' consistency of \code{which} parameter of some tiles functions.
+#'
+.verify_which <- function(which, cube) {
+
+    if (is.null(which))
+        return(NULL)
+
+    if (!is.logical(which) && !is.integer(which))
+        stop("You must inform a `logical` or `integer` vector in `which` parameter.", call. = FALSE)
+
+    if (is.logical(which) && length(which) != length(cube$tiles))
+        stop("The `logical` vector in `which` parameter must have the same length as tiles.", call. = FALSE)
+
+    if ((is.logical(which) && !any(which)) || (is.integer(which) && (length(which) == 0) || max(which) > length(cube$tiles)))
+        warning("No tile extent coerced to `sfc` due to `which` parameter.")
+
+    return(which)
+}
+
+#' @describeIn tiles_functions Returns a \code{logical} vector indicating
+#' selected tiles that satisfies filter.
+#'
+#' @return A \code{logical} vector.
+#'
+#' @details
+#' The function \code{tiles_which} requires \code{sf} package to compute
+#' intersection. It can be used in \code{which} parameter of functions
+#' \code{\link{cube_tiles}}, \code{\link{stack_tiles}}, \code{\link{tiles_which}}
 #'
 #' @export
 #'
-filter_tiles <- function(cube, prefix = NULL, geom = NULL) {
+tiles_which <- function(cube, prefix = NULL, geom = NULL) {
 
-    if (!("EOCubes_cube" %in% class(cube)))
+    if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
-    tiles <- list_tiles(cube = cube, prefix = prefix)
+    if (length(cube$tiles) == 0)
+        stop("Informed cube has no tile.", call. = FALSE)
 
-    if (is.null(tiles)) {
+    selected <- .select_prefix(prefix, cube$tiles)
 
-        cube$tiles <- NULL
-        return(cube)
-    }
+    if (is.null(geom))
+        return(selected)
 
-    if (!is.null(geom)) {
+    if (!requireNamespace("sf", quietly = TRUE))
+        stop("You need `sf` package to run geometric intersection.", call. = FALSE)
 
-        if (!requireNamespace("sf", quietly = TRUE))
-            stop("You need `sf` package to run this function.", call. = FALSE)
+    if (is.character(geom))
+        geom <- sf::read_sf(geom)
 
-        if (is.character(geom))
-            geom <- sf::read_sf(geom)
+    if (!any(c("sfc", "sf") %in% class(geom)))
+        stop("`geom` parameter must be a `sfc` or `sf` object from `sf` package.", call. = FALSE)
 
-        if (!any(c("sfc", "sf") %in% class(geom)))
-            stop("`geom` parameter must be a `sfc` or `sf` object from `sf` package.", call. = FALSE)
+    geom <- sf::st_transform(geom, crs = cube_crs(cube = cube))
 
-        if (!any(c("POLYGON", "MULTIPOLYGON") %in% as.character(unique(sf::st_geometry_type(geom)))))
-            stop("`geom` parameter must be a `POLYGON` or a `MULTIPOLYGON` geometry type.", call. = FALSE)
+    sfc <- cube_sfc(cube = cube)
 
-        geom <- sf::st_transform(geom, crs = cube_crs(cube = cube))
-        extents <- tiles_to_sfc(tiles = tiles)
+    selected <- selected & c(sf::st_intersects(sfc, geom, sparse = FALSE) & !sf::st_touches(sfc, geom, sparse = FALSE))
 
-        selected <- c(sf::st_intersects(extents, geom, sparse = FALSE) & !sf::st_touches(extents, geom, sparse = FALSE))
-        if (length(selected) == 0) {
-
-            warning(sprintf("No tile intersects the informed geometry."), call. = FALSE)
-            cube$tiles <- NULL
-            return(cube)
-        }
-
-        extents <- extents[selected]
-        cube$geometries <- sf::st_intersection(extents, geom)
-
-        tiles <- tiles[selected]
-    }
-
-    class(tiles) <- "list"
-    cube$tiles <- tiles
-    return(cube)
+    return(selected)
 }
 
-#' @describeIn tiles_functions Fetches all registered tiles in a cube.
+#' @describeIn tiles_functions Fetches tiles in a cube.
 #'
-#' @return An \code{EOCubes_fetched, EOCubes_cube} object.
+#' @param cache   A \code{logical} or \code{NULL} to enable (\code{TRUE}),
+#' disable (\code{FALSE}), or proceed the default behavior of (\code{NULL})
+#' the cache system.
+#' @param progress_bar   A \code{logical} value indicating to show or not a
+#' progress bar while fetching tiles.
+#'
+#' @return An \code{EOCubes_tiles} object.
 #'
 #' @details
 #' Fetching tiles can be an expensive task. You can filter tiles that intersects
-#' your studing area before the fetching procedure using \code{filter_tiles}
-#' function.
+#' your area of interest by providing \code{which} parameter.
 #'
-#' @export
-#'
-fetch_tiles <- function(cube) {
+.fetch_tiles <- function(cube, which = NULL, cache = NULL, progress_bar = FALSE) {
 
-    if (!("EOCubes_cube" %in% class(cube)))
-        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
+    if (length(cube$tiles) == 0)
+        stop("Informed cube has no tile.", call. = FALSE)
 
-    # fetch tiles
-    cube$tiles <- lapply(cube$tiles, function(x) {
+    which <- .verify_which(which = which, cube = cube)
 
-        if (is.null(x$href))
-            return(x)
-        .open_json(x$href)
+    tiles <- if (is.null(which)) cube$tiles else cube$tiles[which]
+
+    if (is.null(cache))
+        cache <- is.caching(cube)
+
+    locations <- lapply(tiles, function(x) {
+
+        x$href
     })
 
-    class(cube) <- c("EOCubes_fetched", "EOCubes_cube")
-    return(cube)
+    res <- .open_multiple_jsons(locations = locations,
+                                cache = cache,
+                                progress_bar = progress_bar)
+
+    res <- structure(res,
+                     crs = cube_crs(cube),
+                     class = "EOCubes_tiles")
+
+    return(res)
 }
 
 #' @describeIn tiles_functions Lists all registered tiles in a cube.
 #'
 #' @return An \code{EOCubes_tilelist} object or \code{NULL} if no tile
-#' satisfies the filter criteria
+#' satisfies the \code{which} criteria.
 #'
 #' @export
 #'
-list_tiles <- function(cube, prefix = NULL) {
+cube_tiles <- function(cube, which = NULL) {
 
-    if (!("EOCubes_cube" %in% class(cube)))
+    if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
-    if (is.null(cube$tiles)) {
+    if (length(cube$tiles) == 0)
+        stop("Informed cube has no tile.", call. = FALSE)
 
-        warning("The informed cube has no tile.", call. = FALSE)
-        invisible(NULL)
-    }
+    which <- .verify_which(which = which, cube = cube)
 
-    if (is.null(prefix)) {
+    if (is.null(which)) {
 
         res <- structure(cube$tiles, crs = cube_crs(cube), class = "EOCubes_tilelist")
         return(res)
     }
 
-    res <- .filter_prefix(prefix, cube$tiles)
-
-    if (length(res) == 0) {
-
-        warning(sprintf("No tile with prefix '%s' was found.", prefix), call. = FALSE)
-        invisible(NULL)
-    }
-
-    res <- structure(res, crs = cube_crs(cube), class = "EOCubes_tilelist")
+    res <- cube$tiles[which]
+    res <- structure(res,
+                     crs = cube_crs(cube),
+                     class = "EOCubes_tilelist")
     return(res)
+}
+
+#' @describeIn tiles_functions Returns all tiles extents in a \code{sfc} object.
+#'
+#' @return A \code{sfc} object from \code{sf} package.
+#'
+#' @details
+#' The function \code{cubes_sfc} requires \code{sf} package.
+#'
+#' @export
+#'
+cube_sfc <- function(cube, which = NULL) {
+
+    if (!inherits(cube, "EOCubes_cube"))
+        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
+
+    res <- attr(cube, "sfc")
+    if (is.null(res))
+        stop("No `sfc` attribute found in this cube object.", call. = FALSE)
+
+    which <- .verify_which(which = which, cube = cube)
+
+    if (is.null(which))
+        return(res)
+
+    return(res[which])
 }
 
 #' @describeIn tiles_functions Converts tiles extents to a \code{sfc} object.
 #'
-#' @return A \code{sfc} object.
+#' @return A \code{sfc} object from \code{sf} package.
 #'
 #' @details
 #' The function \code{tiles_to_sfc} requires \code{sf} package.
 #'
-#' @export
-#'
-tiles_to_sfc <- function(tiles) {
+.tiles_to_sfc <- function(cube, which = NULL) {
 
     if (!requireNamespace("sf", quietly = TRUE))
         stop("You need `sf` package to run this function.", call. = FALSE)
 
-    if (!("EOCubes_tilelist" %in% class(tiles)))
-        stop("You must inform an `EOCubes_tilelist` object as data input.", call. = FALSE)
+    if (!("EOCubes_cube" %in% class(cube)))
+        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
-    res <- sf::st_sfc(lapply(tiles, function(x) {
+    which <- .verify_which(which = which, cube = cube)
 
-        sf::st_polygon(list(matrix(unlist(x$extent$geometry$coordinates), ncol = 2, byrow = T)))
-    }), crs = attr(tiles, "crs"))
+    tiles <- if (is.null(which)) cube$tiles else cube$tiles[which]
+
+    res <- sf::st_sfc(lapply(tiles, function(tile) {
+
+        sf::st_polygon(list(matrix(unlist(tile$extent$geometry$coordinates), ncol = 2, byrow = T)))
+    }), crs = cube_crs(cube))
 
     return(res)
 }
