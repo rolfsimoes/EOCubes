@@ -6,6 +6,7 @@
 \alias{cube_name}
 \alias{cube_remote}
 \alias{cube_bands}
+\alias{cube_bands_info}
 \alias{cube_crs}
 \alias{cube_bbox}
 \alias{cube_raster_info}
@@ -19,6 +20,8 @@ cube_name(cube)
 cube_remote(cube)
 
 cube_bands(cube)
+
+cube_bands_info(cube)
 
 cube_crs(cube)
 
@@ -41,6 +44,8 @@ An \code{EOCubes_cube} object.
 A \code{character} string.
 
 A \code{character} string.
+
+A \code{character} vector.
 
 An \code{EOCubes_bandlist} object.
 
@@ -78,7 +83,10 @@ and \code{to} dates interval that encompass cube layers values.
 \item \code{cube_remote}: Returns the name of the remote entry from which
 the cube have been fetched.
 
-\item \code{cube_bands}: Lists the all registered bands in a cube.
+\item \code{cube_bands}: Shows all names of registered bands in a cube.
+
+\item \code{cube_bands_info}: Lists attributes of all registered bands in a
+cube.
 
 \item \code{cube_crs}: Get the registered coordinate reference system (CRS) of a cube.
 
@@ -95,7 +103,7 @@ x <- remote("localhost")
 cub1 <- cube("MOD13Q1/006", x)
 cube_name(cub1)   # show the entry name 'MOD13Q1/006'
 cube_remote(cub1)   # show the remote entry name 'localhost'
-cube_bands(cub1)   # show bands and its meta data
+cube_bands_info(cub1)   # show bands and its meta data
 cube_crs(cub1)   # show CRS string
 cube_bbox(cub1)   # show bbox values
 cube_raster_info(cub1)   # show raster size and pixel resolution

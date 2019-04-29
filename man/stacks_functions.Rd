@@ -3,37 +3,52 @@
 \name{stacks_functions}
 \alias{stacks_functions}
 \alias{stack_tiles}
+\alias{timeline_intervals}
 \alias{stack_length}
 \alias{stack_prune}
 \alias{time_series}
 \title{Stacks functions}
 \usage{
-stack_tiles(cube, bands = names(cube_bands(cube = cube)),
-  start_dates = NULL, end_dates = NULL, which = NULL)
+stack_tiles(cube, bands = NULL, which = NULL, start_reference = NULL,
+  stack_length = NULL, starts_interval = "12 months", from = NULL,
+  to = NULL)
+
+timeline_intervals(timeline, start_reference = NULL,
+  stack_length = NULL, starts_interval = NULL)
 
 stack_length(stacks)
 
 stack_prune(stacks, stack_length)
 
-time_series(cube, longitude, latitude, bands = names(cube_bands(cube)),
-  start_dates = NULL, end_dates = NULL, crs = cube_crs(cube))
+time_series(cube, longitude, latitude, bands = cube_bands(cube),
+  from = NULL, to = NULL, crs = cube_crs(cube))
 }
 \arguments{
 \item{cube}{A \code{EOCubes_cube} data structure.}
 
 \item{bands}{A \code{character} vector with band names to be retrieved.}
 
-\item{start_dates}{A \code{Date} vector to filter layers by date.}
-
-\item{end_dates}{A \code{Date} vector to filter layers by date.}
-
 \item{which}{A \code{logical} or \code{integer} vector indicating which
 tile to be stacked. If \code{NULL} (default) all tiles are stacked.}
 
-\item{stacks}{A \code{EOCubes_stacks} object.}
+\item{start_reference}{A \code{Date} value used to compute the start dates
+of each break given the \code{starts_interval} parameter and the
+timeline of each tile.}
 
-\item{stack_length}{An \code{integer} indicating the length of stacks to
-be filtered.}
+\item{stack_length}{A \code{numeric} positive value informing the length
+of each stack.}
+
+\item{starts_interval}{A \code{character} value containing the interval
+between two consecutives breaks' start dates.}
+
+\item{from}{A \code{Date} value to filter dates.}
+
+\item{to}{A \code{Date} value to filter dates.}
+
+\item{timeline}{A \code{Date} vector representing all images' acquisition
+dates.}
+
+\item{stacks}{A \code{EOCubes_stacks} object.}
 
 \item{longitude}{A \code{numeric} value informing the longitute (X).}
 
@@ -43,6 +58,8 @@ be filtered.}
 }
 \value{
 An \code{EOCubes_stacks} object.
+
+An \code{EOCubes_intervals} object.
 
 A \code{list} of \code{integer}.
 
@@ -56,23 +73,37 @@ Stacks are a set of GeoTif reference locations organized by tile,
 date interval, and bands.
 }
 \details{
-\code{start_dates} and \code{end_dates} must have the same length.
-These dates define intervals that are used to filter layers that constructs
-stacks. The parameter \code{which} can be used to filter which tiles must
+The parameter \code{which} can be used to filter which tiles must
 be stacked, hence which tiles must be fetched. Fetching tiles can be an
 expensive task. You can filter tiles that intersects your area of interest
-by providing \code{which} parameter.
+by providing \code{which} parameter. The parameters \code{from} and \code{to}
+filter the range of timeline considered in stacking procedure. For all other
+parameters see the details of \code{timeline_intervals} function.
 
-\code{start_dates} and \code{end_dates} must have the same length.
-These dates define intervals that are used to filter layers that constructs
-the time series for each band and interval. \code{longitude} and
-\code{latitude} parameters must be in \code{crs} projection. The default
-value for \code{crs} is the same as the \code{cube} crs.
+The function \code{timeline_intervals} generate an \code{EOCubes_intervals}
+object that represents a list of from/to dates indicating ranges. Each
+interval is computed considering a start date of reference
+(\code{start_reference}) which is used to mark many start dates throughout
+the timeline, according to an interval given by \code{starts_interval}
+parameter. Thereafter, the end 'marks' are computed so that each interval
+have the length given by \code{stack_length} parameter.
+
+If no \code{start_reference} is informed, you must omit \code{stack_length}
+and \code{starts_interval} parameters. In this case, the interval will
+comprehends all timeline.
+
+The \code{from} and \code{to} parameters defines an interval to filter
+timeseries length. The \code{longitude} and \code{latitude} parameters must
+be in \code{crs} projection. The default value for \code{crs} is the same as
+the \code{cube} crs.
 }
 \section{Functions}{
 \itemize{
 \item \code{stack_tiles}: Returns a new \code{EOCubes_stacks} object that
 represents stacks for each band and each date intervals.
+
+\item \code{timeline_intervals}: Returns an \code{EOCubes_intervals} indicating
+where to break the timeline.
 
 \item \code{stack_length}: Returns a list of \code{integer} with the
 lengths of each stack.
@@ -89,8 +120,10 @@ x <- remote("localhost")
 cub1 <- cube("MOD13Q1/006", x)
 tiles_index <- tiles_which(cub1, "h12v10")
 stk1 <- stack_tiles(cub1, bands = c("evi", "ndvi"),
-                    start_dates = "2014-01-01", end_dates = "2015-01-01",
-                    which = tiles_index)
+                    which = tiles_index,
+                    start_reference = "2014-01-01", stack_length = 23,
+                    starts_interval = "year", from = "2013-06-01",
+                    to = "2015-06-01")
 stack_length(stk1)
 stack_prune(stk1, 23)
 

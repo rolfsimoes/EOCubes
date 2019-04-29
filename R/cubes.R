@@ -16,7 +16,7 @@
 #' cub1 <- cube("MOD13Q1/006", x)
 #' cube_name(cub1)   # show the entry name 'MOD13Q1/006'
 #' cube_remote(cub1)   # show the remote entry name 'localhost'
-#' cube_bands(cub1)   # show bands and its meta data
+#' cube_bands_info(cub1)   # show bands and its meta data
 #' cube_crs(cub1)   # show CRS string
 #' cube_bbox(cub1)   # show bbox values
 #' cube_raster_info(cub1)   # show raster size and pixel resolution
@@ -85,13 +85,32 @@ cube_remote <- function(cube) {
     return(attr(cube, "remote_name"))
 }
 
-#' @describeIn cube_functions Lists the all registered bands in a cube.
+#' @describeIn cube_functions Shows all names of registered bands in a cube.
+#'
+#' @return A \code{character} vector.
+#'
+#' @export
+#'
+cube_bands <- function(cube) {
+
+    if (!inherits(cube, "EOCubes_cube"))
+        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
+
+    res <- cube$meta$bands
+    if (is.null(res))
+        stop("Cube definition doesn't have a valid 'meta/bands' field.")
+
+    return(names(res))
+}
+
+#' @describeIn cube_functions Lists attributes of all registered bands in a
+#' cube.
 #'
 #' @return An \code{EOCubes_bandlist} object.
 #'
 #' @export
 #'
-cube_bands <- function(cube) {
+cube_bands_info <- function(cube) {
 
     if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
@@ -108,6 +127,8 @@ cube_bands <- function(cube) {
         band$scale <- suppressWarnings(as.numeric(band$scale))
         return(band)
     })
+
+    res <- do.call(mapply, args = c(list(FUN = c, SIMPLIFY = FALSE), res))
 
     res <- structure(res, class = "EOCubes_bandlist")
     return(res)
