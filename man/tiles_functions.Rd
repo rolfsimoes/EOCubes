@@ -65,7 +65,7 @@ consistency of \code{which} parameter of some tiles functions.
 
 The function \code{tiles_which} requires \code{sf} package to compute
 intersection. It can be used in \code{which} parameter of functions
-\code{\link{cube_tiles}}, \code{\link{stack_tiles}}, \code{\link{tiles_which}}
+\code{\link{cube_tiles}}, \code{\link{stacks}}, \code{\link{tiles_which}}
 
 Fetching tiles can be an expensive task. You can filter tiles that intersects
 your area of interest by providing \code{which} parameter.

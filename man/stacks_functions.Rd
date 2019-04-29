@@ -2,14 +2,14 @@
 % Please edit documentation in R/stacks.R
 \name{stacks_functions}
 \alias{stacks_functions}
-\alias{stack_tiles}
+\alias{stacks}
 \alias{timeline_intervals}
 \alias{stack_length}
-\alias{stack_prune}
+\alias{prune_stacks}
 \alias{time_series}
 \title{Stacks functions}
 \usage{
-stack_tiles(cube, bands = NULL, which = NULL, start_reference = NULL,
+stacks(cube, bands = NULL, which = NULL, start_reference = NULL,
   stack_length = NULL, starts_interval = "12 months", from = NULL,
   to = NULL)
 
@@ -18,7 +18,7 @@ timeline_intervals(timeline, start_reference = NULL,
 
 stack_length(stacks)
 
-stack_prune(stacks, stack_length)
+prune_stacks(stacks, stack_length)
 
 time_series(cube, longitude, latitude, bands = cube_bands(cube),
   from = NULL, to = NULL, crs = cube_crs(cube))
@@ -99,7 +99,7 @@ the \code{cube} crs.
 }
 \section{Functions}{
 \itemize{
-\item \code{stack_tiles}: Returns a new \code{EOCubes_stacks} object that
+\item \code{stacks}: Returns a new \code{EOCubes_stacks} object that
 represents stacks for each band and each date intervals.
 
 \item \code{timeline_intervals}: Returns an \code{EOCubes_intervals} indicating
@@ -108,7 +108,7 @@ where to break the timeline.
 \item \code{stack_length}: Returns a list of \code{integer} with the
 lengths of each stack.
 
-\item \code{stack_prune}: Returns an \code{EOCubes_stacks} object where
+\item \code{prune_stacks}: Returns an \code{EOCubes_stacks} object where
 each stack has the same length given by \code{stack_length}.
 
 \item \code{time_series}: Returns an \code{EOCubes_timeseries} object that
@@ -119,13 +119,13 @@ represents a set of band timeseries from some date intervals.
 x <- remote("localhost")
 cub1 <- cube("MOD13Q1/006", x)
 tiles_index <- tiles_which(cub1, "h12v10")
-stk1 <- stack_tiles(cub1, bands = c("evi", "ndvi"),
-                    which = tiles_index,
-                    start_reference = "2014-01-01", stack_length = 23,
-                    starts_interval = "year", from = "2013-06-01",
-                    to = "2015-06-01")
+stk1 <- stacks(cub1, bands = c("evi", "ndvi"),
+               which = tiles_index,
+               start_reference = "2014-01-01", stack_length = 23,
+               starts_interval = "year", from = "2013-06-01",
+               to = "2015-06-01")
 stack_length(stk1)
-stack_prune(stk1, 23)
+prune_stacks(stk1, 23)
 
 }
 \seealso{

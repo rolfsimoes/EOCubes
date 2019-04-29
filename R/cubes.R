@@ -293,7 +293,7 @@ NULL
 #' @details
 #' The function \code{tiles_which} requires \code{sf} package to compute
 #' intersection. It can be used in \code{which} parameter of functions
-#' \code{\link{cube_tiles}}, \code{\link{stack_tiles}}, \code{\link{tiles_which}}
+#' \code{\link{cube_tiles}}, \code{\link{stacks}}, \code{\link{tiles_which}}
 #'
 #' @export
 #'
