@@ -108,7 +108,7 @@ default_remote <- function(default = NULL, cache = TRUE) {
                     "Reported error: %s"), file, e$message), call. = FALSE)
             })
 
-        return(remote(.global[["root"]]$default), cache = cache)
+        return(remote(.global[["root"]]$default, cache = cache))
     } else
         stop(sprintf("Remote name '%s' not found", default), call. = FALSE)
 }

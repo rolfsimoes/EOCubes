@@ -5,7 +5,8 @@
 #' @description Returns a \code{logical} vector indicating which elements in
 #' named list are selected.
 #'
-#' @param prefix   A \code{character} containing a name prefix to be filtered.
+#' @param prefix   A \code{character} vector containing one or more name
+#' prefix to be filtered.
 #' @param named_list   Any named \code{list} containing the data to be filtered.
 #'
 #' @return A \code{logical} vector.
@@ -15,7 +16,12 @@
     if (is.null(prefix))
         return(rep(TRUE, length(named_list)))
 
-    select <- grepl(paste0("^", prefix, ".*$"), names(named_list))
+    select <- rep(FALSE, length(named_list))
+    for (p in prefix) {
+
+        select <- grepl(paste0("^", p, ".*$"), names(named_list)) | select
+    }
+
     return(select)
 }
 

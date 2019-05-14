@@ -74,17 +74,17 @@ stacks <- function(cube, bands = NULL, which = NULL,
         stop(sprintf("Informed band(s) %s not found in cube definition.",
                      .sublime_list(bands[!(bands %in% cube_bands(cube = cube))])), call. = FALSE)
 
+    if (!is.null(from) && any(is.na(from <- as.Date(from[[1]], "%Y-%m-%d"))))
+        stop("Invalid date value for `from` parameter.", call. = FALSE)
+
+    if (!is.null(to) && any(is.na(to <- as.Date(to[[1]], "%Y-%m-%d"))))
+        stop("Invalid date value for `to` parameter.", call. = FALSE)
+
     if (is.null(from))
         from <- cube_dates_info(cube = cube)$from
 
-    if (!inherits(from, "Date"))
-        from <- as.Date(from, "%Y-%m-%d")
-
     if (is.null(to))
         to <- cube_dates_info(cube = cube)$to
-
-    if (!inherits(to, "Date"))
-        to <- as.Date(to, "%Y-%m-%d")
 
     names(bands) <- bands
 
@@ -99,7 +99,9 @@ stacks <- function(cube, bands = NULL, which = NULL,
         data <- lapply(bands, function(band) {
 
             layers <- do.call(mapply, args = c(list(FUN = c, SIMPLIFY = FALSE), tile$bands[[band]]$layers))
-            layers$date <- as.Date(layers$date, "%Y-%m-%d")
+
+            if (!is.null(to) && any(is.na(layers$date <- as.Date(layers$date, "%Y-%m-%d"))))
+                stop(sprintf("Inconsistent dates detected in tile '%s'", tile$id))
 
             filter_layers <- (from <= layers$date) & (layers$date <= to)
             layers$href <- layers$href[filter_layers]
@@ -166,23 +168,20 @@ stacks <- function(cube, bands = NULL, which = NULL,
 timeline_intervals <- function(timeline, start_reference = NULL, stack_length = NULL,
                                starts_interval = NULL) {
 
-    if (is.null(timeline))
-        stop("Invalid dates values for `timeline`.", call. = FALSE)
-
-    if (!inherits(timeline, "Date"))
-        timeline <- as.Date(timeline, "%Y-%m-%d")
+    if (!is.null(timeline) && any(is.na(timeline <- as.Date(timeline, "%Y-%m-%d"))))
+        stop("Invalid dates values for `timeline` parameter.", call. = FALSE)
 
     if (!is.null(start_reference)) {
 
-        if (!inherits(start_reference, "Date"))
-            start_reference <- as.Date(start_reference, "%Y-%m-%d")
+        if (any(is.na(start_reference <- as.Date(start_reference[[1]], "%Y-%m-%d"))))
+            stop("Invalid date value for `start_referente` parameter.")
 
         if (is.null(stack_length) || !is.numeric(stack_length) || (stack_length <= 0))
-            stop("Invalid number for `stack_length`.", call. = FALSE)
+            stop("Invalid number for `stack_length` parameter.", call. = FALSE)
 
         # check `starts_interval`...
         tryCatch(seq(start_reference, by = starts_interval, length.out = 2),
-                 error = function(e) stop("Invalid string for `starts_interval`.", call. = FALSE))
+                 error = function(e) stop("Invalid string for `starts_interval` parameter.", call. = FALSE))
 
         if (start_reference < timeline[1]) {
 

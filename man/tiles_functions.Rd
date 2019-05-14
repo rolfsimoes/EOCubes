@@ -4,9 +4,9 @@
 \alias{tiles_functions}
 \alias{.verify_which}
 \alias{tiles_which}
+\alias{list_tiles}
 \alias{.fetch_tiles}
-\alias{cube_tiles}
-\alias{cube_sfc}
+\alias{tiles_sfc}
 \alias{.tiles_to_sfc}
 \title{Tiles functions}
 \usage{
@@ -14,11 +14,11 @@
 
 tiles_which(cube, prefix = NULL, geom = NULL)
 
+list_tiles(cube)
+
 .fetch_tiles(cube, which = NULL, cache = NULL, progress_bar = FALSE)
 
-cube_tiles(cube, which = NULL)
-
-cube_sfc(cube, which = NULL)
+tiles_sfc(cube, which = NULL)
 
 .tiles_to_sfc(cube, which = NULL)
 }
@@ -28,8 +28,8 @@ tile to be fetched. If \code{NULL} (default) all tiles are fetched.}
 
 \item{cube}{A \code{EOCubes_cube} object.}
 
-\item{prefix}{A \code{character} vector containing tile name prefix to be
-filtered.}
+\item{prefix}{A \code{character} vector containing tile's name prefixes
+to be filtered.}
 
 \item{geom}{A \code{sfc}, a \code{sf} object, or a \code{character}
 path to a shapefile to filter intersecting tiles.}
@@ -46,10 +46,9 @@ Either a \code{logical} or \code{integer} vector.
 
 A \code{logical} vector.
 
-An \code{EOCubes_tiles} object.
+An \code{EOCubes_tilelist} object that lists all tiles from a cube.
 
-An \code{EOCubes_tilelist} object or \code{NULL} if no tile
-satisfies the \code{which} criteria.
+An \code{EOCubes_tiles} object.
 
 A \code{sfc} object from \code{sf} package.
 
@@ -65,7 +64,7 @@ consistency of \code{which} parameter of some tiles functions.
 
 The function \code{tiles_which} requires \code{sf} package to compute
 intersection. It can be used in \code{which} parameter of functions
-\code{\link{cube_tiles}}, \code{\link{stacks}}, \code{\link{tiles_which}}
+\code{\link{cube_filter}}, \code{\link{stacks}}, \code{\link{tiles_which}}
 
 Fetching tiles can be an expensive task. You can filter tiles that intersects
 your area of interest by providing \code{which} parameter.
@@ -82,11 +81,11 @@ list of tiles.
 \item \code{tiles_which}: Returns a \code{logical} vector indicating
 selected tiles that satisfies filter.
 
+\item \code{list_tiles}: Lists all registered tiles in a cube.
+
 \item \code{.fetch_tiles}: Fetches tiles in a cube.
 
-\item \code{cube_tiles}: Lists all registered tiles in a cube.
-
-\item \code{cube_sfc}: Returns all tiles extents in a \code{sfc} object.
+\item \code{tiles_sfc}: Returns all tiles extents in a \code{sfc} object.
 
 \item \code{.tiles_to_sfc}: Converts tiles extents to a \code{sfc} object.
 }}
@@ -99,13 +98,13 @@ tiles_index <- tiles_which(cub1, "h13v10")   # select 'h13v10' tile
 # required by sf package
 if (require("tibble") && require("sf")) {
 
-   cube_sfc(cub1, which = tiles_index)
+   tiles_sfc(cub1, which = tiles_index)
    file <- system.file("shape/example.shp", package = "EOCubes")
    tiles_index <- tiles_which(cub1, geom = file)   # select all tiles that intersect shapefile
-   cube_sfc(cub1, which = tiles_index)
+   tiles_sfc(cub1, which = tiles_index)
 }
 
 }
 \seealso{
-\code{\link{remote}}, \code{\link{cube}}, \code{\link{cube_tiles}}
+\code{\link{remote}}, \code{\link{cube}}, \code{\link{cube_filter}}
 }

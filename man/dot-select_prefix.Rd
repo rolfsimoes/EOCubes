@@ -7,7 +7,8 @@
 .select_prefix(prefix, named_list)
 }
 \arguments{
-\item{prefix}{A \code{character} containing a name prefix to be filtered.}
+\item{prefix}{A \code{character} vector containing one or more name
+prefix to be filtered.}
 
 \item{named_list}{Any named \code{list} containing the data to be filtered.}
 }

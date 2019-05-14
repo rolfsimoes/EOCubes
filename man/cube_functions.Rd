@@ -11,6 +11,7 @@
 \alias{cube_bbox}
 \alias{cube_raster_info}
 \alias{cube_dates_info}
+\alias{cube_filter}
 \title{Cube functions}
 \usage{
 cube(name, remote = default_remote())
@@ -30,6 +31,8 @@ cube_bbox(cube)
 cube_raster_info(cube)
 
 cube_dates_info(cube)
+
+cube_filter(cube, tiles = NULL, from = NULL, to = NULL)
 }
 \arguments{
 \item{name}{A \code{character} text with cube name.}
@@ -37,6 +40,13 @@ cube_dates_info(cube)
 \item{remote}{An \code{EOCubes_remote} object.}
 
 \item{cube}{An \code{EOCubes_cube} object.}
+
+\item{tiles}{A \code{logical} or \code{integer} vector indicating which
+tile to be selected. If \code{NULL} (default) all tiles are selected.}
+
+\item{from}{A \code{Date} value to filter layers' dates.}
+
+\item{to}{A \code{Date} value to filter layers' dates.}
 }
 \value{
 An \code{EOCubes_cube} object.
@@ -56,6 +66,9 @@ A \code{list} object.
 A \code{list} object.
 
 A \code{list} object.
+
+An \code{EOCubes_cube} object with tiles that satisfies the
+\code{which} criteria.
 }
 \description{
 These functions provides the basic operations over a cube
@@ -73,6 +86,9 @@ and \code{resolution} (CRS units per pixel) values.
 The function \code{cube_dates_info} access the metadata field
 'interval' of an \code{EOCubes_cube} object that contains \code{from}
 and \code{to} dates interval that encompass cube layers values.
+
+The parameter \code{tiles} of the function \code{cube_tiles} can
+be used with \code{tiles_which} function.
 }
 \section{Functions}{
 \itemize{
@@ -96,6 +112,8 @@ cube.
 
 \item \code{cube_dates_info}: Get the date interval (min, max) of all
 registered tiles in a cube.
+
+\item \code{cube_filter}: Filter tiles in a cube.
 }}
 
 \examples{
