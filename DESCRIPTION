@@ -1,8 +1,8 @@
 Package: EOCubes
 Type: Package
 Title: Earth Observation Data Cubes Management and Client
-Version: 0.1.20
-Author: Rolf Simoes
+Version: 0.6.20
+Author: Rolf Simoes, Gilberto Camara, and Gilberto Ribeiro
 Maintainer: Rolf Simoes <rolf.simoes@inpe.br>
 Description: EOCubes is a package that manages cubes metadata information
     and organize them to facilitate batch processing. The database is composed
@@ -11,11 +11,11 @@ Description: EOCubes is a package that manages cubes metadata information
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 Depends:
-    aws.s3,
-    raster,
-    tibble,
-    yaml
+    jsonlite,
+    pbmcapply
 Suggests:
-    parallel
+    sf,
+    tibble,
+    raster
