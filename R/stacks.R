@@ -26,10 +26,10 @@
 #' @param latitude   A \code{numeric} value informing the latitude (Y).
 #' @param crs   An \code{integer} (EPSG code) or \code{character} (proj4)
 #'
-#' @seealso \code{\link{remote}}, \code{\link{cube}}, \code{\link{tiles_which}}
+#' @seealso \code{\link{repository}}, \code{\link{cube}}, \code{\link{tiles_which}}
 #'
 #' @examples
-#' x <- remote("localhost")
+#' x <- repository("localhost")
 #' cub1 <- cube("MOD13Q1/006", x)
 #' tiles_index <- tiles_which(cub1, "h12v10")
 #' stk1 <- stacks(cub1, bands = c("evi", "ndvi"),

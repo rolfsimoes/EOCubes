@@ -8,15 +8,15 @@
 #' @param cube   A \code{EOCubes_cube} object.
 #' @param which   A \code{logical} or \code{integer} vector indicating which
 #' tile to be fetched. If \code{NULL} (default) all tiles are fetched.
-#' @param x   Either a \code{EOCubes_remote} or \code{EOCubes_cube} object.
+#' @param x   Either a \code{EOCubes_repository} or \code{EOCubes_cube} object.
 #'
-#' @seealso \code{\link{remote}}
+#' @seealso \code{\link{repository}}
 #'
 #' @examples
-#' # disable cache system for subsequent fetches on 'x' remote
-#' x <- remote("localhost", FALSE)
+#' # disable cache system for subsequent fetches on 'x' repository
+#' x <- repository("localhost", FALSE)
 #' # by default cache system is enabled
-#' x <- remote("localhost")
+#' x <- repository("localhost")
 #' # cache all cube tiles contents
 #' cache_cube(cube("MOD13Q1/006", x))
 #' # persists cached data
@@ -102,17 +102,17 @@ flush_cache <- function(cube = NULL, which = NULL) {
 }
 
 #' @describeIn cache_functions Check if a given object (either
-#' \code{EOCubes_remote} or \code{EOCubes_cube}) has cache system enabled.
+#' \code{EOCubes_repository} or \code{EOCubes_cube}) has cache system enabled.
 #'
 #' @return A \code{logical} value.
 #'
 #' @export
 #'
-is.caching <- function(x) {
+is_caching <- function(x) {
 
-    if (!inherits(x, "EOCubes_remote") &&
+    if (!inherits(x, "EOCubes_repository") &&
         !inherits(x, "EOCubes_cube"))
-        stop(paste("You must inform either an `EOCubes_remote` or `EOCubes_cube`",
+        stop(paste("You must inform either an `EOCubes_repository` or `EOCubes_cube`",
                    "object as data input."), call. = FALSE)
 
     res <- attr(x, "caching")
