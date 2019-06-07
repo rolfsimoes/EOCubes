@@ -6,7 +6,7 @@
 #' Stacks are a set of GeoTif reference locations organized by tile,
 #' date interval, and bands.
 #'
-#' @param cube   A \code{EOCubes_cube} data structure.
+#' @param cube   An \code{EOCubes_cube} object.
 #' @param bands   A \code{character} vector with band names to be retrieved.
 #' @param which   A \code{logical} or \code{integer} vector indicating which
 #' tile to be stacked. If \code{NULL} (default) all tiles are stacked.

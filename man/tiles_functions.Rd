@@ -91,7 +91,7 @@ selected tiles that satisfies filter.
 }}
 
 \examples{
-x <- remote("localhost")
+x <- repository("localhost")
 cub1 <- cube("MOD13Q1/006", x)
 tiles_index <- tiles_which(cub1, "h13v10")   # select 'h13v10' tile
 
@@ -106,5 +106,5 @@ if (require("tibble") && require("sf")) {
 
 }
 \seealso{
-\code{\link{remote}}, \code{\link{cube}}, \code{\link{cube_filter}}
+\code{\link{repository}}, \code{\link{cube}}, \code{\link{cube_filter}}
 }

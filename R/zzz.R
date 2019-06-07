@@ -33,7 +33,7 @@ NULL
     if (!dir.exists(base)) {
 
         message(sprintf("Creating the config directory '%s'.", base))
-        suppressWarnings(dir.create(base, showWarnings = FALSE))
+        suppressWarnings(dir.create(base, recursive = TRUE, showWarnings = FALSE))
     }
 
     .load_root()

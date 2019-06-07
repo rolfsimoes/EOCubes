@@ -119,58 +119,6 @@
 
 #' @title Internal functions
 #'
-#' @name .save_root
-#'
-#' @description Save the current root state.
-#'
-#' @return None.
-#'
-.save_root <- function() {
-
-    file <- sprintf("%s/root.json", .local_base)
-
-    tryCatch(
-        .save_json(.global[["root"]], file),
-
-        error = function(e) {
-
-            stop(sprintf(paste(
-                "Error when trying to save package root '%s'.",
-                "Reported error: %s"), file, e$message), call. = FALSE)
-        })
-
-    invisible(NULL)
-}
-
-#' @title Internal functions
-#'
-#' @name .load_root
-#'
-#' @description Load the current root state.
-#'
-#' @return None.
-#'
-.load_root <- function() {
-
-    file <- sprintf("%s/root.json", base)
-
-    repositories <- tryCatch(
-        .open_json(file, cache = FALSE),
-        error = function(e) {
-
-            message(sprintf(paste(
-                "Error when trying to load package root '%s'.",
-                "Loading default repository list."), file))
-            return(.default_repositories)
-        })
-
-    .global[["root"]] <- repositories
-
-    invisible(NULL)
-}
-
-#' @title Internal functions
-#'
 #' @name .sublime_list
 #'
 #' @description List a human readable list of elements.

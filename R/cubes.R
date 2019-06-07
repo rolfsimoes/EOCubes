@@ -2,7 +2,10 @@
 #'
 #' @name cube_functions
 #'
+#' @param x   A \code{list} data structure to be converted
+#' to \code{EOCubes_cube} object.
 #' @param name   A \code{character} text with cube name.
+#' @param caching   A \code{logical} value indicating wether to use cache system.
 #' @param repository   An \code{EOCubes_repository} object.
 #' @param cube   An \code{EOCubes_cube} object.
 #' @param tiles   A \code{logical} or \code{integer} vector indicating which
@@ -19,7 +22,6 @@
 #' x <- repository("localhost")
 #' cub1 <- cube("MOD13Q1/006", x)
 #' cube_name(cub1)   # show the entry name 'MOD13Q1/006'
-#' cube_repository(cub1)   # show the repository entry name 'localhost'
 #' cube_bands_info(cub1)   # show bands and its meta data
 #' cube_crs(cub1)   # show CRS string
 #' cube_bbox(cub1)   # show bbox values
@@ -27,35 +29,49 @@
 #'
 NULL
 
+#' @describeIn cube_functions Convert a well-formed data structure to
+#' a cube object.
+#'
+#' @return An \code{EOCubes_cube} object.
+#'
+#' @export
+#'
+as_cube <- function(x, name, caching) {
+
+    if (any(c(is.null(x$id), is.null(x$version), is.null(x$description), is.null(x$keywords),
+              is.null(x$tiles))))
+        stop("Invalid repository data definition.", call. = FALSE)
+
+    res <- structure(x, repository_name = name,
+                     caching = caching,
+                     class = c(paste0("EOCubes_cube_", x$version), "EOCubes_cube"))
+
+    tryCatch(is_supported(res),
+             error = function(e) stop("The version of the cube definition is not supported.", call. = FALSE))
+
+    return(res)
+}
+
 #' @describeIn cube_functions Fetches a cube from repository.
 #'
 #' @return An \code{EOCubes_cube} object.
 #'
 #' @export
 #'
-cube <- function(name, repository = default_repository()) {
+cube <- function(name, repository = repository("localhost")) {
 
     if (!inherits(repository, "EOCubes_repository"))
         stop("You must inform an `EOCubes_repository` object as data input.", call. = FALSE)
 
-    if (missing(repository))
-        message(sprintf("Searching cube in default repository '%s'.", repository_name(repository)))
-
     if (!(name %in% names(repository$cubes)))
         stop(sprintf("Cube '%s' not found in repository '%s'.", name, repository_name(repository)), call. = FALSE)
 
-    res <- .open_json(repository$cubes[[name]]$href, cache = is.caching(repository))
+    res <- .open_json(repository$cubes[[name]]$href, cache = is_caching(repository))
 
-    res <- structure(res,
-                     cube_name = name,
-                     repository_name = repository_name(repository),
-                     caching = is.caching(repository),
-                     class = "EOCubes_cube")
+    res <- as_cube(res, name = repository_name(repository), caching = is_caching(repository))
 
-    if (requireNamespace("sf", quietly = TRUE)) {
-
+    if (requireNamespace("sf", quietly = TRUE))
         attr(res, "sfc") <- .tiles_to_sfc(cube = res)
-    }
 
     return(res)
 }
@@ -71,22 +87,8 @@ cube_name <- function(cube) {
     if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
-    return(attr(cube, "cube_name"))
-}
-
-#' @describeIn cube_functions Returns the name of the repository entry from which
-#' the cube have been fetched.
-#'
-#' @return A \code{character} string.
-#'
-#' @export
-#'
-cube_repository <- function(cube) {
-
-    if (!inherits(cube, "EOCubes_cube"))
-        stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
-
-    return(attr(cube, "repository_name"))
+    res <- cube$id
+    return(res)
 }
 
 #' @describeIn cube_functions Shows all names of registered bands in a cube.
@@ -415,7 +417,7 @@ list_tiles <- function(cube) {
     tiles <- if (is.null(which)) cube$tiles else cube$tiles[which]
 
     if (is.null(cache))
-        cache <- is.caching(cube)
+        cache <- is_caching(cube)
 
     locations <- lapply(tiles, function(x) {
 
@@ -485,3 +487,4 @@ tiles_sfc <- function(cube, which = NULL) {
 
     return(res)
 }
+

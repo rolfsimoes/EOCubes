@@ -2,9 +2,9 @@
 % Please edit documentation in R/cubes.R
 \name{cube_functions}
 \alias{cube_functions}
+\alias{as_cube}
 \alias{cube}
 \alias{cube_name}
-\alias{cube_remote}
 \alias{cube_bands}
 \alias{cube_bands_info}
 \alias{cube_crs}
@@ -14,11 +14,11 @@
 \alias{cube_filter}
 \title{Cube functions}
 \usage{
-cube(name, remote = default_remote())
+as_cube(x, name, caching)
+
+cube(name, repository = repository("localhost"))
 
 cube_name(cube)
-
-cube_remote(cube)
 
 cube_bands(cube)
 
@@ -35,9 +35,14 @@ cube_dates_info(cube)
 cube_filter(cube, tiles = NULL, from = NULL, to = NULL)
 }
 \arguments{
+\item{x}{A \code{list} data structure to be converted
+to \code{EOCubes_cube} object.}
+
 \item{name}{A \code{character} text with cube name.}
 
-\item{remote}{An \code{EOCubes_remote} object.}
+\item{caching}{A \code{logical} value indicating wether to use cache system.}
+
+\item{repository}{An \code{EOCubes_repository} object.}
 
 \item{cube}{An \code{EOCubes_cube} object.}
 
@@ -51,7 +56,7 @@ tile to be selected. If \code{NULL} (default) all tiles are selected.}
 \value{
 An \code{EOCubes_cube} object.
 
-A \code{character} string.
+An \code{EOCubes_cube} object.
 
 A \code{character} string.
 
@@ -92,12 +97,12 @@ be used with \code{tiles_which} function.
 }
 \section{Functions}{
 \itemize{
-\item \code{cube}: Fetches a cube from remote.
+\item \code{as_cube}: Convert a well-formed data structure to
+a cube object.
+
+\item \code{cube}: Fetches a cube from repository.
 
 \item \code{cube_name}: Returns the name of a cube.
-
-\item \code{cube_remote}: Returns the name of the remote entry from which
-the cube have been fetched.
 
 \item \code{cube_bands}: Shows all names of registered bands in a cube.
 
@@ -117,10 +122,9 @@ registered tiles in a cube.
 }}
 
 \examples{
-x <- remote("localhost")
+x <- repository("localhost")
 cub1 <- cube("MOD13Q1/006", x)
 cube_name(cub1)   # show the entry name 'MOD13Q1/006'
-cube_remote(cub1)   # show the remote entry name 'localhost'
 cube_bands_info(cub1)   # show bands and its meta data
 cube_crs(cub1)   # show CRS string
 cube_bbox(cub1)   # show bbox values
@@ -128,5 +132,5 @@ cube_raster_info(cub1)   # show raster size and pixel resolution
 
 }
 \seealso{
-\code{\link{remote}}
+\code{\link{repository}}
 }

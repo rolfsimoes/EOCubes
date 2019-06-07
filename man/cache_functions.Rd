@@ -6,7 +6,7 @@
 \alias{cached_entries}
 \alias{cache_cube}
 \alias{flush_cache}
-\alias{is.caching}
+\alias{is_caching}
 \title{Caching functions}
 \usage{
 save_cache()
@@ -17,7 +17,7 @@ cache_cube(cube, which = NULL)
 
 flush_cache(cube = NULL, which = NULL)
 
-is.caching(x)
+is_caching(x)
 }
 \arguments{
 \item{cube}{A \code{EOCubes_cube} object.}
@@ -25,7 +25,7 @@ is.caching(x)
 \item{which}{A \code{logical} or \code{integer} vector indicating which
 tile to be fetched. If \code{NULL} (default) all tiles are fetched.}
 
-\item{x}{Either a \code{EOCubes_remote} or \code{EOCubes_cube} object.}
+\item{x}{Either a \code{EOCubes_repository} or \code{EOCubes_cube} object.}
 }
 \value{
 None
@@ -68,20 +68,20 @@ contents.
 
 \item \code{flush_cache}: Discards all cached tiles in a cube.
 
-\item \code{is.caching}: Check if a given object (either
-\code{EOCubes_remote} or \code{EOCubes_cube}) has cache system enabled.
+\item \code{is_caching}: Check if a given object (either
+\code{EOCubes_repository} or \code{EOCubes_cube}) has cache system enabled.
 }}
 
 \examples{
-# disable cache system for subsequent fetches on 'x' remote
-x <- remote("localhost", FALSE)
+# disable cache system for subsequent fetches on 'x' repository
+x <- repository("localhost", FALSE)
 # by default cache system is enabled
-x <- remote("localhost")
+x <- repository("localhost")
 # cache all cube tiles contents
 cache_cube(cube("MOD13Q1/006", x))
 # persists cached data
 save_cache()
 }
 \seealso{
-\code{\link{remote}}
+\code{\link{repository}}
 }

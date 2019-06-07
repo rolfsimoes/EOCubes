@@ -24,7 +24,7 @@ time_series(cube, longitude, latitude, bands = cube_bands(cube),
   from = NULL, to = NULL, crs = cube_crs(cube))
 }
 \arguments{
-\item{cube}{A \code{EOCubes_cube} data structure.}
+\item{cube}{An \code{EOCubes_cube} object.}
 
 \item{bands}{A \code{character} vector with band names to be retrieved.}
 
@@ -116,7 +116,7 @@ represents a set of band timeseries from some date intervals.
 }}
 
 \examples{
-x <- remote("localhost")
+x <- repository("localhost")
 cub1 <- cube("MOD13Q1/006", x)
 tiles_index <- tiles_which(cub1, "h12v10")
 stk1 <- stacks(cub1, bands = c("evi", "ndvi"),
@@ -129,5 +129,5 @@ prune_stacks(stk1, 23)
 
 }
 \seealso{
-\code{\link{remote}}, \code{\link{cube}}, \code{\link{tiles_which}}
+\code{\link{repository}}, \code{\link{cube}}, \code{\link{tiles_which}}
 }
