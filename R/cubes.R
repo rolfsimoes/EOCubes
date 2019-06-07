@@ -3,7 +3,7 @@
 #' @name cube_functions
 #'
 #' @param name   A \code{character} text with cube name.
-#' @param remote   An \code{EOCubes_remote} object.
+#' @param repository   An \code{EOCubes_repository} object.
 #' @param cube   An \code{EOCubes_cube} object.
 #' @param tiles   A \code{logical} or \code{integer} vector indicating which
 #' tile to be selected. If \code{NULL} (default) all tiles are selected.
@@ -13,13 +13,13 @@
 #' @description These functions provides the basic operations over a cube
 #' (\code{EOCubes_cube}) object.
 #'
-#' @seealso \code{\link{remote}}
+#' @seealso \code{\link{repository}}
 #'
 #' @examples
-#' x <- remote("localhost")
+#' x <- repository("localhost")
 #' cub1 <- cube("MOD13Q1/006", x)
 #' cube_name(cub1)   # show the entry name 'MOD13Q1/006'
-#' cube_remote(cub1)   # show the remote entry name 'localhost'
+#' cube_repository(cub1)   # show the repository entry name 'localhost'
 #' cube_bands_info(cub1)   # show bands and its meta data
 #' cube_crs(cub1)   # show CRS string
 #' cube_bbox(cub1)   # show bbox values
@@ -27,29 +27,29 @@
 #'
 NULL
 
-#' @describeIn cube_functions Fetches a cube from remote.
+#' @describeIn cube_functions Fetches a cube from repository.
 #'
 #' @return An \code{EOCubes_cube} object.
 #'
 #' @export
 #'
-cube <- function(name, remote = default_remote()) {
+cube <- function(name, repository = default_repository()) {
 
-    if (!inherits(remote, "EOCubes_remote"))
-        stop("You must inform an `EOCubes_remote` object as data input.", call. = FALSE)
+    if (!inherits(repository, "EOCubes_repository"))
+        stop("You must inform an `EOCubes_repository` object as data input.", call. = FALSE)
 
-    if (missing(remote))
-        message(sprintf("Searching cube in default remote '%s'.", remote_name(remote)))
+    if (missing(repository))
+        message(sprintf("Searching cube in default repository '%s'.", repository_name(repository)))
 
-    if (!(name %in% names(remote$cubes)))
-        stop(sprintf("Cube '%s' not found in remote '%s'.", name, remote_name(remote)), call. = FALSE)
+    if (!(name %in% names(repository$cubes)))
+        stop(sprintf("Cube '%s' not found in repository '%s'.", name, repository_name(repository)), call. = FALSE)
 
-    res <- .open_json(remote$cubes[[name]]$href, cache = is.caching(remote))
+    res <- .open_json(repository$cubes[[name]]$href, cache = is.caching(repository))
 
     res <- structure(res,
                      cube_name = name,
-                     remote_name = remote_name(remote),
-                     caching = is.caching(remote),
+                     repository_name = repository_name(repository),
+                     caching = is.caching(repository),
                      class = "EOCubes_cube")
 
     if (requireNamespace("sf", quietly = TRUE)) {
@@ -74,19 +74,19 @@ cube_name <- function(cube) {
     return(attr(cube, "cube_name"))
 }
 
-#' @describeIn cube_functions Returns the name of the remote entry from which
+#' @describeIn cube_functions Returns the name of the repository entry from which
 #' the cube have been fetched.
 #'
 #' @return A \code{character} string.
 #'
 #' @export
 #'
-cube_remote <- function(cube) {
+cube_repository <- function(cube) {
 
     if (!inherits(cube, "EOCubes_cube"))
         stop("You must inform an `EOCubes_cube` object as data input.", call. = FALSE)
 
-    return(attr(cube, "remote_name"))
+    return(attr(cube, "repository_name"))
 }
 
 #' @describeIn cube_functions Shows all names of registered bands in a cube.
@@ -285,10 +285,10 @@ cube_filter <- function(cube, tiles = NULL, from = NULL, to = NULL) {
 #' @param prefix   A \code{character} vector containing tile's name prefixes
 #' to be filtered.
 #'
-#' @seealso \code{\link{remote}}, \code{\link{cube}}, \code{\link{cube_filter}}
+#' @seealso \code{\link{repository}}, \code{\link{cube}}, \code{\link{cube_filter}}
 #'
 #' @examples
-#' x <- remote("localhost")
+#' x <- repository("localhost")
 #' cub1 <- cube("MOD13Q1/006", x)
 #' tiles_index <- tiles_which(cub1, "h13v10")   # select 'h13v10' tile
 #'

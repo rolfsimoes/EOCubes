@@ -10,11 +10,11 @@ NULL
 # global constant
 .local_base = "~/.EOCubes"
 
-# default remotes
-.default_remotes <- list(
+# default repositories
+.default_repositories <- list(
     version = "0.7",
     default = "localhost",
-    remotes = list(
+    repositories = list(
         eocubes = list(
             description = "Cubes maintained and curated by EOCubes team.",
             keywords = c("EOCubes", "INPE"),
@@ -25,8 +25,8 @@ NULL
             href = path.expand(sprintf("%s/localhost/catalog.json", .local_base))
         )))
 
-# load remotes definition
-.load_remotes <- function() {
+# load repositories definition
+.load_repositories <- function() {
 
     base <- path.expand(.local_base)
 
@@ -36,29 +36,8 @@ NULL
         suppressWarnings(dir.create(base, showWarnings = FALSE))
     }
 
-    file <- sprintf("%s/root.json", base)
-
-    remotes <- tryCatch(
-        .open_json(file, cache = FALSE),
-        error = function(e) {
-
-            message(sprintf(paste(
-                "Error when trying to read remote list file '%s'.",
-                "Loading default remote list."), file))
-            return(.default_remotes)
-        })
-
-    .global[["root"]] <- remotes
-
-    tryCatch(
-        .save_json(.global[["root"]], file),
-
-        error = function(e) {
-
-            message(sprintf(paste(
-                "Error when trying to save remotes list file '%s'.",
-                "Continuing anyway."), file))
-        })
+    .load_root()
+    .save_root()
 
     invisible(TRUE)
 }
@@ -84,6 +63,6 @@ NULL
 # on load
 .onLoad <- function(lib, pkg) {
 
-    .load_remotes()
+    .load_repositories()
     .load_cache()
 }
