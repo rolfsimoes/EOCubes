@@ -6,7 +6,7 @@
 #' to \code{EOCubes_cube} object.
 #' @param name   A \code{character} text with cube name.
 #' @param caching   A \code{logical} value indicating wether to use cache system.
-#' @param repository   An \code{EOCubes_repository} object.
+#' @param repos   An \code{EOCubes_repository} object.
 #' @param cube   An \code{EOCubes_cube} object.
 #' @param tiles   A \code{logical} or \code{integer} vector indicating which
 #' tile to be selected. If \code{NULL} (default) all tiles are selected.
@@ -19,7 +19,7 @@
 #' @seealso \code{\link{repository}}
 #'
 #' @examples
-#' x <- repository("localhost")
+#' x <- repository("AWS.S3")
 #' cub1 <- cube("MOD13Q1/006", x)
 #' cube_name(cub1)   # show the entry name 'MOD13Q1/006'
 #' cube_bands_info(cub1)   # show bands and its meta data
@@ -58,17 +58,17 @@ as_cube <- function(x, name, caching) {
 #'
 #' @export
 #'
-cube <- function(name, repository = repository("localhost")) {
+cube <- function(name, repos = repos("localhost")) {
 
-    if (!inherits(repository, "EOCubes_repository"))
+    if (!inherits(repos, "EOCubes_repository"))
         stop("You must inform an `EOCubes_repository` object as data input.", call. = FALSE)
 
-    if (!(name %in% names(repository$cubes)))
-        stop(sprintf("Cube '%s' not found in repository '%s'.", name, repository_name(repository)), call. = FALSE)
+    if (!(name %in% names(repos$cubes)))
+        stop(sprintf("Cube '%s' not found in repository '%s'.", name, repository_name(repos)), call. = FALSE)
 
-    res <- .open_json(repository$cubes[[name]]$href, cache = is_caching(repository))
+    res <- .open_json(repos$cubes[[name]]$href, cache = is_caching(repos))
 
-    res <- as_cube(res, name = repository_name(repository), caching = is_caching(repository))
+    res <- as_cube(res, name = repository_name(repos), caching = is_caching(repos))
 
     if (requireNamespace("sf", quietly = TRUE))
         attr(res, "sfc") <- .tiles_to_sfc(cube = res)

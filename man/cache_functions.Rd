@@ -2,6 +2,7 @@
 % Please edit documentation in R/cache.R
 \name{cache_functions}
 \alias{cache_functions}
+\alias{load_cache}
 \alias{save_cache}
 \alias{cached_entries}
 \alias{cache_cube}
@@ -9,6 +10,8 @@
 \alias{is_caching}
 \title{Caching functions}
 \usage{
+load_cache()
+
 save_cache()
 
 cached_entries()
@@ -30,6 +33,8 @@ tile to be fetched. If \code{NULL} (default) all tiles are fetched.}
 \value{
 None
 
+None
+
 A \code{character} vector.
 
 None
@@ -43,8 +48,11 @@ These functions provides basic procedures to work with the
 \code{EOCubes} cache system.
 }
 \details{
+The \code{load_cache} function loads all cached data from
+\code{EOCubes:::.local_base()} directory.
+
 The \code{save_cache} function saves all cached data into
-\code{EOCubes:::.local_base} directory.
+\code{EOCubes:::.local_base()} directory.
 
 The function \code{cached_entries} shows all entries (JSON locations)
 cached.
@@ -59,6 +67,8 @@ To persist the flush, you must call explicitly \code{save_cache} function.
 }
 \section{Functions}{
 \itemize{
+\item \code{load_cache}: Load all cached data.
+
 \item \code{save_cache}: Persists all cached data.
 
 \item \code{cached_entries}: Lists all cached entries.

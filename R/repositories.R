@@ -11,7 +11,7 @@
 #' prefix to be filtered.
 #' @param name   A \code{character} text with repository name.
 #' @param caching   A \code{logical} value indicating wether to use cache system.
-#' @param repository   An \code{EOCubes_repository} object.
+#' @param repos   An \code{EOCubes_repository} object.
 #'
 #' @seealso \code{\link{list_cubes}}
 #'
@@ -22,6 +22,22 @@
 #' list_cubes(x)   # list cubes in 'localhost'
 #'
 NULL
+
+#' @describeIn repository_functions Return the default localhost repository.
+#'
+#' @return A \code{EOCubes_repository} object.
+#'
+.default_localhost <- function() {
+
+    res <- structure(list(
+        id = "localhost",
+        version = "0.7",
+        description = "Local repository",
+        keywords = list(c("EOCubes", "Local", "Repository")),
+        cubes = list()), class = "EOCubes_repository")
+
+    return(res)
+}
 
 #' @describeIn repository_functions Convert a well-formed data structure to
 #' a repository object.
@@ -111,12 +127,12 @@ repository <- function(name, caching = TRUE) {
 #'
 #' @export
 #'
-repository_name <- function(repository) {
+repository_name <- function(repos) {
 
-    if (!inherits(repository, "EOCubes_repository"))
+    if (!inherits(repos, "EOCubes_repository"))
         stop("You must inform an `EOCubes_repository` object as data input.", call. = FALSE)
 
-    res <- attr(repository, "repository_name")
+    res <- attr(repos, "repository_name")
     return(res)
 }
 
@@ -130,15 +146,15 @@ repository_name <- function(repository) {
 #'
 #' @export
 #'
-list_cubes <- function(repository = repository("localhost"), prefix = NULL) {
+list_cubes <- function(repos = repository("localhost"), prefix = NULL) {
 
-    if (!inherits(repository, "EOCubes_repository"))
+    if (!inherits(repos, "EOCubes_repository"))
         stop("You must inform an `EOCubes_repository` object as data input.", call. = FALSE)
 
-    if (missing(repository))
-        message(sprintf("Listing cubes of default repository: '%s'.", repository_name(repository)))
+    if (missing(repos))
+        message(sprintf("Listing cubes of default repository: '%s'.", repository_name(repos)))
 
-    if (length(repository$cubes) == 0) {
+    if (length(repos$cubes) == 0) {
 
         warning("The repository has no cube.", call. = FALSE)
         invisible(NULL)
@@ -146,11 +162,11 @@ list_cubes <- function(repository = repository("localhost"), prefix = NULL) {
 
     if (is.null(prefix)) {
 
-        res <- structure(repository$cubes, class = "EOCubes_cubelist")
+        res <- structure(repos$cubes, class = "EOCubes_cubelist")
         return(res)
     }
 
-    selected <- .select_prefix(prefix, repository$cubes)
+    selected <- .select_prefix(prefix, repos$cubes)
 
     if (!any(selected)) {
 
@@ -158,6 +174,6 @@ list_cubes <- function(repository = repository("localhost"), prefix = NULL) {
         invisible(NULL)
     }
 
-    res <- structure(repository$cubes[selected], class = "EOCubes_cubelist")
+    res <- structure(repos$cubes[selected], class = "EOCubes_cubelist")
     return(res)
 }

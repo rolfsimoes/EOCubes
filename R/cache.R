@@ -23,20 +23,39 @@
 #' save_cache()
 NULL
 
+#' @describeIn cache_functions Load all cached data.
+#'
+#' @return None
+#'
+#' @details
+#' The \code{load_cache} function loads all cached data from
+#' \code{EOCubes:::.local_base()} directory.
+#'
+#' @export
+#'
+load_cache <- function() {
+
+    file <- sprintf("%s/cache.RData", .local_base())
+
+    if (file.exists(file))
+        load(file, .cache)
+
+    invisible(TRUE)
+}
+
 #' @describeIn cache_functions Persists all cached data.
 #'
 #' @return None
 #'
 #' @details
 #' The \code{save_cache} function saves all cached data into
-#' \code{EOCubes:::.local_base} directory.
+#' \code{EOCubes:::.local_base()} directory.
 #'
 #' @export
 #'
 save_cache <- function() {
 
-    base <- path.expand(.local_base)
-    cache_file <- path.expand(sprintf("%s/cache.RData", base))
+    cache_file <- path.expand(sprintf("%s/cache.RData", .local_base()))
     save(list = ls(all.names = TRUE, envir = .cache), file = cache_file, envir = .cache)
 }
 

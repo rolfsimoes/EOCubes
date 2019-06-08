@@ -2,12 +2,21 @@
 % Please edit documentation in R/root.R
 \name{management_functions}
 \alias{management_functions}
+\alias{.default_root}
+\alias{save_root}
+\alias{load_root}
 \alias{link_repository}
 \alias{unlink_repository}
 \alias{link_cube}
 \alias{unlink_cube}
 \title{Management functions}
 \usage{
+.default_root()
+
+save_root()
+
+load_root()
+
 link_repository(name, location)
 
 unlink_repository(name)
@@ -22,6 +31,12 @@ unlink_cube(name)
 \item{location}{An \code{character} string with a valid json location.}
 }
 \value{
+A \code{list} data structure with root config.
+
+None.
+
+None.
+
 A \code{repository} object.
 
 None.
@@ -47,6 +62,12 @@ The function \code{rm_cube} removes the cube reference from the repository 'loca
 }
 \section{Functions}{
 \itemize{
+\item \code{.default_root}: Return the default root config.
+
+\item \code{save_root}: Save the current root state.
+
+\item \code{load_root}: Load the current root state.
+
 \item \code{link_repository}: Adds a repository definition to the package root.
 
 \item \code{unlink_repository}: Remove a repository entry from the package root.

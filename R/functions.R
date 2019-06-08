@@ -1,3 +1,19 @@
+.local_base <- function() {
+
+    res <- path.expand("~/.EOCubes")
+
+    if (!dir.exists(res))
+        suppressWarnings(dir.create(paste(res, "localhost", sep = "/"), recursive = TRUE, showWarnings = FALSE))
+
+    if (!dir.exists(paste(res, "localhost", sep = "/")))
+        suppressWarnings(dir.create(paste(res, "localhost", sep = "/"), recursive = TRUE, showWarnings = FALSE))
+
+    if (!file.exists(paste(res, "localhost", "catalog.json", sep = "/")))
+        .save_json(.default_localhost(), file = paste(res, "localhost", "catalog.json", sep = "/"))
+
+    return(res)
+}
+
 #' @title Internal functions
 #'
 #' @name .select_prefix
@@ -108,10 +124,11 @@
 .save_json <- function(x, file) {
 
     tryCatch(
-        suppressWarnings(jsonlite::write_json(x = x, path = file, pretty = TRUE)),
+        suppressWarnings(jsonlite::write_json(x = c(x), path = file, pretty = TRUE)),
         error = function(e) {
 
-            stop(sprintf("Error while saving JSON file '%s'.", file), call. = FALSE)
+            stop(sprintf(paste("Error while saving JSON file '%s'.",
+                               "Reported error: %s"), file, e$message), call. = FALSE)
         })
 
     return(TRUE)

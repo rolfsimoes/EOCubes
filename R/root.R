@@ -18,20 +18,37 @@
 #'
 NULL
 
+#' @describeIn management_functions Return the default root config.
+#'
+#' @return A \code{list} data structure with root config.
+#'
+.default_root <- function() {
 
-#' @title Internal functions
-#'
-#' @name .save_root
-#'
-#' @description Save the current root state.
+    res <- list(
+        version = "0.7",
+        repositories = list(
+            AWS.S3 = list(
+                description = "Cubes maintained and curated by EOCubes team.",
+                keywords = c("EOCubes", "INPE"),
+                href = "https://eocubes-test.s3.amazonaws.com/catalog.json"),
+            localhost = list(
+                description = "Local maintained cubes.",
+                keywords = c("Local"),
+                href = sprintf("%s/localhost/catalog.json", .local_base())
+            )))
+
+    return(res)
+}
+
+#' @describeIn management_functions Save the current root state.
 #'
 #' @return None.
 #'
-.save_root <- function() {
+#' @export
+#'
+save_root <- function() {
 
-    base <- path.expand(.local_base)
-
-    file <- sprintf("%s/root.json", base)
+    file <- sprintf("%s/root.json", .local_base())
 
     tryCatch(
         .save_json(.global[["root"]], file),
@@ -46,31 +63,27 @@ NULL
     invisible(NULL)
 }
 
-#' @title Internal functions
-#'
-#' @name .load_root
-#'
-#' @description Load the current root state.
+#' @describeIn management_functions Load the current root state.
 #'
 #' @return None.
 #'
-.load_root <- function() {
+#' @export
+#'
+load_root <- function() {
 
-    base <- path.expand(.local_base)
+    file <- sprintf("%s/root.json", .local_base())
 
-    file <- sprintf("%s/root.json", base)
-
-    repositories <- tryCatch(
+    root <- tryCatch(
         .open_json(file, cache = FALSE),
         error = function(e) {
 
             message(sprintf(paste(
                 "Error when trying to load package root '%s'.",
                 "Loading default repository list."), file))
-            return(.default_repositories)
+            return(.default_root())
         })
 
-    .global[["root"]] <- repositories
+    .global[["root"]] <- root
 
     invisible(NULL)
 }
@@ -98,7 +111,7 @@ link_repository <- function(name, location) {
 
     .global[["root"]]$repositories[[name]] <- c(res[c("description", "keywords")], href = location)
 
-    .save_root()
+    save_root()
 
     return(res)
 }
@@ -121,7 +134,7 @@ unlink_repository <- function(name) {
 
     .global[["root"]]$repositories[[name]] <- NULL
 
-    .save_root()
+    save_root()
 
     invisible(NULL)
 }
@@ -151,7 +164,7 @@ link_cube <- function(location) {
 
     .global[["root"]]$repositories[["localhost"]]$cubes[[name]] <- c(res[c("description", "keywords")], href = location)
 
-    .save_root()
+    save_root()
 
     return(res)
 }
@@ -174,7 +187,7 @@ unlink_cube <- function(name) {
 
     .global[["root"]]$repositories[["localhost"]]$cubes[[name]] <- NULL
 
-    .save_root()
+    save_root()
 
     invisible(NULL)
 }

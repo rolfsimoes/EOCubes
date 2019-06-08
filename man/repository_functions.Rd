@@ -2,6 +2,7 @@
 % Please edit documentation in R/repositories.R
 \name{repository_functions}
 \alias{repository_functions}
+\alias{.default_localhost}
 \alias{as_repository}
 \alias{list_repositories}
 \alias{repository}
@@ -9,15 +10,17 @@
 \alias{list_cubes}
 \title{Repository functions}
 \usage{
+.default_localhost()
+
 as_repository(x, name, caching)
 
 list_repositories(prefix = NULL)
 
 repository(name, caching = TRUE)
 
-repository_name(repository)
+repository_name(repos)
 
-list_cubes(repository = repository("localhost"), prefix = NULL)
+list_cubes(repos = repos("localhost"), prefix = NULL)
 }
 \arguments{
 \item{x}{A \code{list} data structure to be converted
@@ -30,9 +33,11 @@ to \code{EOCubes_repository} object.}
 \item{prefix}{A \code{character} containing repository/cube entry name
 prefix to be filtered.}
 
-\item{repository}{An \code{EOCubes_repository} object.}
+\item{repos}{An \code{EOCubes_repository} object.}
 }
 \value{
+A \code{EOCubes_repository} object.
+
 A \code{repository} object.
 
 A \code{list} of repositories.
@@ -63,6 +68,8 @@ in a repository. Use \code{prefix} parameter to filter the entries by name.
 }
 \section{Functions}{
 \itemize{
+\item \code{.default_localhost}: Return the default localhost repository.
+
 \item \code{as_repository}: Convert a well-formed data structure to
 a repository object.
 

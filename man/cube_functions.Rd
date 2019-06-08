@@ -16,7 +16,7 @@
 \usage{
 as_cube(x, name, caching)
 
-cube(name, repository = repository("localhost"))
+cube(name, repos = repos("localhost"))
 
 cube_name(cube)
 
@@ -42,7 +42,7 @@ to \code{EOCubes_cube} object.}
 
 \item{caching}{A \code{logical} value indicating wether to use cache system.}
 
-\item{repository}{An \code{EOCubes_repository} object.}
+\item{repos}{An \code{EOCubes_repository} object.}
 
 \item{cube}{An \code{EOCubes_cube} object.}
 
@@ -122,7 +122,7 @@ registered tiles in a cube.
 }}
 
 \examples{
-x <- repository("localhost")
+x <- repository("AWS.S3")
 cub1 <- cube("MOD13Q1/006", x)
 cube_name(cub1)   # show the entry name 'MOD13Q1/006'
 cube_bands_info(cub1)   # show bands and its meta data
