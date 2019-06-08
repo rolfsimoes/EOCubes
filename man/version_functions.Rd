@@ -2,20 +2,39 @@
 % Please edit documentation in R/versions.R
 \name{version_functions}
 \alias{version_functions}
+\alias{as_repository}
+\alias{as_cube}
 \title{Version control functions}
+\usage{
+as_repository(x, name, caching)
+
+as_cube(x, name, caching)
+}
 \arguments{
-\item{x}{A \code{list} data structure to be converted to repository object.}
+\item{x}{A data structure.}
 
 \item{name}{A \code{character} text with repository name.}
 
-\item{repository}{An \code{EOCubes_repository} object.}
+\item{caching}{A \code{logical} value indicating wether to use cache system.}
+}
+\value{
+A \code{EOCubes_repository} object.
 
-\item{cube}{An \code{EOCubes_cube} object.}
+An \code{EOCubes_cube} object.
 }
 \description{
 These functions provides the basic operations over a cube
 (\code{EOCubes_cube}) object.
 }
+\section{Functions}{
+\itemize{
+\item \code{as_repository}: Convert a well-formed data structure to
+a repository object.
+
+\item \code{as_cube}: Convert a well-formed data structure to
+a cube object.
+}}
+
 \seealso{
 \code{\link{repository}}
 }

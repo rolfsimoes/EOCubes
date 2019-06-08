@@ -5,7 +5,6 @@
 #' @param x   A \code{list} data structure to be converted
 #' to \code{EOCubes_cube} object.
 #' @param name   A \code{character} text with cube name.
-#' @param caching   A \code{logical} value indicating wether to use cache system.
 #' @param repos   An \code{EOCubes_repository} object.
 #' @param cube   An \code{EOCubes_cube} object.
 #' @param tiles   A \code{logical} or \code{integer} vector indicating which
@@ -28,29 +27,6 @@
 #' cube_raster_info(cub1)   # show raster size and pixel resolution
 #'
 NULL
-
-#' @describeIn cube_functions Convert a well-formed data structure to
-#' a cube object.
-#'
-#' @return An \code{EOCubes_cube} object.
-#'
-#' @export
-#'
-as_cube <- function(x, name, caching) {
-
-    if (any(c(is.null(x$id), is.null(x$version), is.null(x$description), is.null(x$keywords),
-              is.null(x$tiles))))
-        stop("Invalid repository data definition.", call. = FALSE)
-
-    res <- structure(x, repository_name = name,
-                     caching = caching,
-                     class = c(paste0("EOCubes_cube_", x$version), "EOCubes_cube"))
-
-    tryCatch(is_supported(res),
-             error = function(e) stop("The version of the cube definition is not supported.", call. = FALSE))
-
-    return(res)
-}
 
 #' @describeIn cube_functions Fetches a cube from repository.
 #'

@@ -2,7 +2,6 @@
 % Please edit documentation in R/cubes.R
 \name{cube_functions}
 \alias{cube_functions}
-\alias{as_cube}
 \alias{cube}
 \alias{cube_name}
 \alias{cube_bands}
@@ -14,8 +13,6 @@
 \alias{cube_filter}
 \title{Cube functions}
 \usage{
-as_cube(x, name, caching)
-
 cube(name, repos = repos("localhost"))
 
 cube_name(cube)
@@ -35,12 +32,7 @@ cube_dates_info(cube)
 cube_filter(cube, tiles = NULL, from = NULL, to = NULL)
 }
 \arguments{
-\item{x}{A \code{list} data structure to be converted
-to \code{EOCubes_cube} object.}
-
 \item{name}{A \code{character} text with cube name.}
-
-\item{caching}{A \code{logical} value indicating wether to use cache system.}
 
 \item{repos}{An \code{EOCubes_repository} object.}
 
@@ -52,10 +44,11 @@ tile to be selected. If \code{NULL} (default) all tiles are selected.}
 \item{from}{A \code{Date} value to filter layers' dates.}
 
 \item{to}{A \code{Date} value to filter layers' dates.}
+
+\item{x}{A \code{list} data structure to be converted
+to \code{EOCubes_cube} object.}
 }
 \value{
-An \code{EOCubes_cube} object.
-
 An \code{EOCubes_cube} object.
 
 A \code{character} string.
@@ -97,9 +90,6 @@ be used with \code{tiles_which} function.
 }
 \section{Functions}{
 \itemize{
-\item \code{as_cube}: Convert a well-formed data structure to
-a cube object.
-
 \item \code{cube}: Fetches a cube from repository.
 
 \item \code{cube_name}: Returns the name of a cube.

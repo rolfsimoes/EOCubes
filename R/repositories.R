@@ -39,64 +39,6 @@ NULL
     return(res)
 }
 
-#' @describeIn repository_functions Convert a well-formed data structure to
-#' a repository object.
-#'
-#' @return A \code{repository} object.
-#'
-#' @export
-#'
-as_repository <- function(x, name, caching) {
-
-    if (any(c(is.null(x$version), is.null(x$description), is.null(x$keywords), is.null(x$cubes))))
-        stop("Invalid repository data definition.", call. = FALSE)
-
-    res <- structure(x,
-                     repository_name = name,
-                     caching = caching,
-                     class = c(paste0("EOCubes_repository_", x$version), "EOCubes_repository"))
-
-    tryCatch(is_supported(res),
-             error = function(e) stop("The version of the respository definition is not supported.", call. = FALSE))
-
-    return(res)
-}
-
-#' @describeIn repository_functions Lists all registered repositories.
-#'
-#' @return A \code{list} of repositories.
-#'
-#' @details The function \code{list_repositories} lists all registered repository
-#' entries. Use \code{prefix} parameter to filter the entries by name.
-#'
-#' @export
-#'
-list_repositories <- function(prefix = NULL) {
-
-    if (length(.global[["root"]]$repositories) == 0) {
-
-        warning("No repository registered.", call. = FALSE)
-        invisible(NULL)
-    }
-
-    if (is.null(prefix)) {
-
-        res <- structure(.global[["root"]]$repositories, class = "EOCubes_repositorylist")
-        return(res)
-    }
-
-    selected <- .select_prefix(prefix, .global[["root"]]$repositories)
-
-    if (!any(selected)) {
-
-        warning(sprintf("No repository with prefix '%s' was found.", prefix), call. = FALSE)
-        invisible(NULL)
-    }
-
-    res <- structure(.global[["root"]]$repositories[selected], class = "EOCubes_repositorylist")
-    return(res)
-}
-
 #' @describeIn repository_functions Fetches a registered repository.
 #'
 #' @return A \code{repository} data structure.
@@ -108,10 +50,10 @@ list_repositories <- function(prefix = NULL) {
 #'
 repository <- function(name, caching = TRUE) {
 
-    if (!(name %in% names(.global[["root"]]$repositories)))
+    if (!(name %in% names(.global[["config"]]$repositories)))
         stop(sprintf("Repository name '%s' not found.", name), call. = FALSE)
 
-    res <- .open_json(.global[["root"]]$repositories[[name]]$href, cache = caching)
+    res <- .open_json(.global[["config"]]$repositories[[name]]$href, cache = caching)
 
     res <- as_repository(res, name = name, caching = caching)
 
@@ -150,15 +92,6 @@ list_cubes <- function(repos = repository("localhost"), prefix = NULL) {
 
     if (!inherits(repos, "EOCubes_repository"))
         stop("You must inform an `EOCubes_repository` object as data input.", call. = FALSE)
-
-    if (missing(repos))
-        message(sprintf("Listing cubes of default repository: '%s'.", repository_name(repos)))
-
-    if (length(repos$cubes) == 0) {
-
-        warning("The repository has no cube.", call. = FALSE)
-        invisible(NULL)
-    }
 
     if (is.null(prefix)) {
 

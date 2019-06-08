@@ -3,8 +3,6 @@
 \name{repository_functions}
 \alias{repository_functions}
 \alias{.default_localhost}
-\alias{as_repository}
-\alias{list_repositories}
 \alias{repository}
 \alias{repository_name}
 \alias{list_cubes}
@@ -12,35 +10,27 @@
 \usage{
 .default_localhost()
 
-as_repository(x, name, caching)
-
-list_repositories(prefix = NULL)
-
 repository(name, caching = TRUE)
 
 repository_name(repos)
 
-list_cubes(repos = repos("localhost"), prefix = NULL)
+list_cubes(repos = repository("localhost"), prefix = NULL)
 }
 \arguments{
-\item{x}{A \code{list} data structure to be converted
-to \code{EOCubes_repository} object.}
-
 \item{name}{A \code{character} text with repository name.}
 
 \item{caching}{A \code{logical} value indicating wether to use cache system.}
 
+\item{repos}{An \code{EOCubes_repository} object.}
+
 \item{prefix}{A \code{character} containing repository/cube entry name
 prefix to be filtered.}
 
-\item{repos}{An \code{EOCubes_repository} object.}
+\item{x}{A \code{list} data structure to be converted
+to \code{EOCubes_repository} object.}
 }
 \value{
 A \code{EOCubes_repository} object.
-
-A \code{repository} object.
-
-A \code{list} of repositories.
 
 A \code{repository} data structure.
 
@@ -54,9 +44,6 @@ These functions provides a basic operations over repositories.
 A repository is an entry point to a cube provider that can maintain many cubes.
 }
 \details{
-The function \code{list_repositories} lists all registered repository
-entries. Use \code{prefix} parameter to filter the entries by name.
-
 The function \code{repository} fetches the repository registered on a given
 entry \code{name}.
 
@@ -69,11 +56,6 @@ in a repository. Use \code{prefix} parameter to filter the entries by name.
 \section{Functions}{
 \itemize{
 \item \code{.default_localhost}: Return the default localhost repository.
-
-\item \code{as_repository}: Convert a well-formed data structure to
-a repository object.
-
-\item \code{list_repositories}: Lists all registered repositories.
 
 \item \code{repository}: Fetches a registered repository.
 

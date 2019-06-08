@@ -10,7 +10,7 @@ NULL
 # on load
 .onLoad <- function(lib, pkg) {
 
-    load_root()
-    save_root()
+    load_config()
+    save_config()
     load_cache()
 }
