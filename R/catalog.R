@@ -19,12 +19,16 @@ make_class_name <- function(type, version) {
     return(res)
 }
 
-new_catalog <- function(type, version, ..., items = list()) {
+new_catalog <- function(name, type, version, ..., items = list()) {
 
-    res <- structure(c(list(type = type,
-                            version = version),
-                       list(...),
-                       list(items = items)),
+    res <- c(list(type = type,
+                  version = version),
+             list(...))
+    if (!is.null(items))
+        res <- c(res, list(items = items))
+
+    res <- structure(res,
+                     catalog_name = name,
                      class = make_class_name(type = type, version = version))
 
     return(res)
@@ -36,11 +40,11 @@ load_catalog <- function(location, name, cache = NULL) {
         .cache[[location]]$cache == cache)
         return(.cache[[location]]$content)
 
-    con <- tryCatch(url(location), error = function(e) {
-        tryCatch(file(location), error = function(e) {
-            stop(sprintf("Invalid file location '%s'", location), call. = FALSE)
-        })
-    })
+    con <- tryCatch(file(location),
+                    error = function(e) {
+                        stop(sprintf("Invalid file location '%s'", location), call. = FALSE)
+                    })
+    writable <- (summary(con)$`can write` == "yes")
 
     res <- tryCatch(
         jsonlite::fromJSON(suppressWarnings(readLines(con, warn = FALSE)),
@@ -65,10 +69,23 @@ load_catalog <- function(location, name, cache = NULL) {
     res <- tryCatch(cast_catalog(res),
                     error = function(e) stop("The version of the data definition is not supported.", call. = FALSE))
 
+    if (writable)
+        attr(res, "writable_location", TRUE) <- location
+
+    return(res)
+}
+
+get_writable_location <- function(x) {
+
+    res <- attr(x, "writable_location", TRUE)
+
     return(res)
 }
 
 cast_catalog <- function(x, ...) {
+
+    if (any(c(is.null(x$type), is.null(x$version))))
+        stop("Invalid data definition.", call. = FALSE)
 
     UseMethod("cast_catalog")
 }
@@ -78,19 +95,37 @@ as_entry <- function(x, ...) {
     UseMethod("as_entry")
 }
 
+catalog_name <- function(x, ...) {
+
+    UseMethod("catalog_name")
+}
+
+catalog_name.default <- function(x) {
+
+    res <- attr(x, "catalog_name", TRUE)
+
+    return(res)
+}
+
 link_item <- function(x, ...) {
 
     UseMethod("link_item")
 }
 
-link_item.default <- function(x, name, location) {
+link_item.default <- function(x, name, location, required_type) {
 
     if (name %in% names(x$items))
         stop(sprintf("The catalog '%s' already exists.", name), call. = FALSE)
 
     obj <- load_catalog(location = location, name = name)
 
-    x$items[[name]] <- as_entry(x = obj, location = location)
+
+    if (!inherits(obj, required_type))
+        stop(sprintf("The location '%s' is not a valid '%s' definition.", location, required_type),
+             call. = FALSE)
+
+    x$items[[name]] <- as_entry(x = obj, location = location,
+                                cache = substring(text = tempfile("", ""), first = 2))
 
     return(x)
 }
@@ -115,7 +150,7 @@ list_items <- function(x, ...) {
     UseMethod("list_items")
 }
 
-list_items.default <- function(x, prefix = NULL) {
+list_items.default <- function(x, prefix) {
 
     if (length(x$items) == 0) {
 
@@ -148,6 +183,12 @@ save_catalog <- function(x, ...) {
 
 save_catalog.default <- function(x, file) {
 
+    if (is.null(file))
+        file <- get_writable_location(x)
+
+    if (is.null(file))
+        stop("The data definition is not writable", call. = FALSE)
+
     tryCatch(
         suppressWarnings(jsonlite::write_json(x = c(x),
                                               path = file,
@@ -162,30 +203,27 @@ save_catalog.default <- function(x, file) {
     invisible(NULL)
 }
 
-cast_catalog.EO_cube_0.8 <- function(x) {
+open_item <- function(x, ...) {
 
-    if (any(c(is.null(x$id), is.null(x$description), is.null(x$keywords),
-              is.null(x$meta))))
-        stop("Invalid cube data definition.", call. = FALSE)
-
-    return(x)
+    UseMethod("open_item")
 }
+
+open_item.default <- function(x, name) {
+
+    res <- load_catalog(location = x$item[[name]]$href, name = name,
+                        cache = x$item[[name]]$cache)
+
+    return(res)
+}
+
 
 cast_catalog.EO_tile_0.8 <- function(x) {
 
     if (any(c(is.null(x$id), is.null(x$description), is.null(x$keywords),
               is.null(x$extent), is.null(x$meta))))
-        stop("Invalid cube data definition.", call. = FALSE)
+        stop("Invalid tile data definition.", call. = FALSE)
 
     return(x)
-}
-
-as_entry.EO_provider_0.8 <- function(x, location) {
-
-    res <- list(description = x$description,
-                href = location)
-
-    return(res)
 }
 
 as_entry.EO_cube_0.8 <- function(x, location) {

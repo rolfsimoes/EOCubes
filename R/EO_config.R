@@ -21,20 +21,23 @@
 #'
 NULL
 
-new_config <- function(type, version, items = list()) {
+new_config <- function(items = list()) {
 
-    res <- new_catalog(type = type, version = version, items = items)
+    res <- new_catalog(name = "config", type = "config", version = "0.8",
+                       items = items)
 
     return(res)
 }
 
 default_config <- function() {
 
-    res <- new_config(type = "config", version = "0.8")
+    res <- new_config()
     res <- link_item(res, name = "localhost",
-                     location = sprintf("%s/localhost/catalog.json", .local_base()))
+                     location = sprintf("%s/localhost/catalog.json", .local_base()),
+                     require_type = "EO_provider")
     res <- link_item(res, name = "AWS.S3",
-                     location = "https://eocubes-test.s3.amazonaws.com/catalog.json")
+                     location = "https://eocubes-test.s3.amazonaws.com/catalog.json",
+                     require_type = "EO_provider")
 
     return(res)
 }
@@ -80,10 +83,8 @@ link_provider <- function(name, location) {
     if (!grepl("^.+\\.json$", location))
         stop("Inform a JSON file location.")
 
-    .global[["config"]] <- link_item(x = .global[["config"]], name = name,
-                                     location = location)
-
-    save_config()
+    .global[["config"]] <- link_item(x = .global[["config"]], name = name, location = location,
+                                     require_type = "EO_provider")
 
     invisible(NULL)
 }
@@ -98,8 +99,6 @@ link_provider <- function(name, location) {
 unlink_provider <- function(name) {
 
     .global[["config"]] <- unlink_item(x = .global[["config"]], name = name)
-
-    save_config()
 
     invisible(NULL)
 }
@@ -121,7 +120,17 @@ list_providers <- function(prefix = NULL) {
     return(res)
 }
 
+config <- function() {
+
+    res <- .global[["config"]]
+
+    return(res)
+}
+
 cast_catalog.EO_config_0.8 <- function(x) {
+
+    if (is.null(x$items))
+        stop("Invalid config data definition.", call. = FALSE)
 
     return(x)
 }
