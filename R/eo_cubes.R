@@ -1,3 +1,24 @@
+as_list <- function(...) {
+
+    UseMethod("as_list")
+}
+
+as_list.eo_config <- function(cf) {
+
+    class(cf) <- NULL
+
+    return(cf)
+}
+
+as_list.eo_provider <- function(pr) {
+
+
+}
+
+as_list.eo_cube <- function(cb) {
+
+
+}
 
 list_providers <- function(...) {
 

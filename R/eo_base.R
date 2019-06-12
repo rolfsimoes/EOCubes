@@ -1,22 +1,3 @@
-as_list <- function(...) {
-
-    UseMethod("as_list")
-}
-
-as_list.eo_config <- function(cf) {
-
-
-}
-
-as_list.eo_provider <- function(pr) {
-
-
-}
-
-as_list.eo_cube <- function(cb) {
-
-
-}
 
 open_json <- function(...) {
 
@@ -48,7 +29,7 @@ load_config <- function(...) {
 load_config.connection <- function(con) {
 
     res <- open_json(con)
-    res <- cast(structure(res, class = "eo_config"))
+    res <- cast(structure(res, class = class_name("config", res$version)))
     .global[["conf"]] <- res
 
     invisible(NULL)
@@ -73,4 +54,11 @@ save_config.connection <- function(con) {
         })
 
     invisible(NULL)
+}
+
+ifnull <- function(x, value) {
+
+    if (is.null(x))
+        return(value)
+    return(x)
 }
