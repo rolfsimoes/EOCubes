@@ -28,9 +28,7 @@ load_config <- function(...) {
 
 load_config.connection <- function(con) {
 
-    res <- open_json(con)
-    res <- cast(structure(res, class = class_name("config", res$version)))
-    .global[["conf"]] <- res
+    .global[["conf"]] <- new_object(open_json(con), type = "config", res$version)
 
     invisible(NULL)
 }

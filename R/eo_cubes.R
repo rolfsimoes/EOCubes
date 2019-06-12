@@ -12,7 +12,9 @@ as_list.eo_config <- function(cf) {
 
 as_list.eo_provider <- function(pr) {
 
+    class(pr) <- NULL
 
+    return(cf)
 }
 
 as_list.eo_cube <- function(cb) {
