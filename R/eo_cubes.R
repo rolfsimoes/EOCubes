@@ -19,7 +19,9 @@ as_list.eo_provider <- function(pr) {
 
 as_list.eo_cube <- function(cb) {
 
+    class(cb) <- NULL
 
+    return(cb)
 }
 
 list_providers <- function(...) {

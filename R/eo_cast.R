@@ -23,18 +23,20 @@ cast <- function(...) {
 
 cast.eo_config_0.7 <- function(cf) {
 
-    if (is.null(cf$remotes))
+    if (is.null(cf$remotes) || is.null(names(pr$remotes)) ||
+        any(sapply(cf$remotes, function(x) (is.null(x$href) || is.null(x$description)))))
         stop("Invalid config file definition.", call. = FALSE)
-
-    cf$remotes <- lapply(cf$remotes, new_object, type = "provider_link", version = cf$version)
 
     return(cf)
 }
 
 cast.eo_config_0.8 <- function(cf) {
 
-    if ((cf$type != "#config") || is.null(cf$items))
+    if ((cf$type != "#config") || is.null(cf$items) || is.null(names(pr$items)) ||
+        any(sapply(cf$items, function(x) (is.null(x$href) || is.null(x$description) || is.null(x$type)))))
         stop("Invalid config file definition.", call. = FALSE)
+
+    # criar um handler para o type
 
     return(cf)
 }
@@ -42,7 +44,7 @@ cast.eo_config_0.8 <- function(cf) {
 cast.eo_provider_0.7 <- function(pr) {
 
     if (is.null(pr$description) || is.null(pr$cubes) || is.null(names(pr$cubes)) ||
-        any(sapply(pr$cubes, function(x) is.null(x$href))))
+        any(sapply(pr$cubes, function(x) (is.null(x$href) || is.null(x$description)))))
         stop("Invalid provider file definition.", call. = FALSE)
 
     return(pr)
@@ -60,12 +62,22 @@ cast.eo_provider_0.8 <- function(pr) {
 
 cast.eo_cube_0.7 <- function(cb) {
 
-    if (is.null(cb$id) || is.null(cb$meta) || is.null(cb$bands) || is.null(tiles))
+    if (is.null(cb$id) || is.null(cb$meta) || is.null(cb$tiles) || is.null(names(cb$tiles)) ||
+        any(sapply(cb$meta, function(x) (is.null(x$crs) || is.null(x$bands) ||
+                                         is.null(x$raster) || is.null(x$extent) ||
+                                         is.null(x$interval)))) ||
+        any(sapply(cb$tiles, function(x) (is.null(x$href) || is.null(x$extent)))))
         stop("Invalid cube file definition.", call. = FALSE)
+
+    return(cb)
 }
 
 cast.eo_cube_0.8 <- function(cb) {
 
-    if (cb$type != "#cube")
+    if ((cb$type != "#cube") || is.null(cb$id) || is.null(cb$crs) || is.null(cb$bbox) ||
+        is.null(cb$description) || is.null(cb$items) || is.null(names(cb$items)) ||
+        any(sapply(cb$items, function(x) (is.null(x$href) || is.null(x$type) || is.null(x$extent)))))
         stop("Invalid cube file definition.", call. = FALSE)
+
+    return(cb)
 }
