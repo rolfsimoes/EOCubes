@@ -145,32 +145,8 @@ viewJSON <- function(cb, st_date, st_period, time_len) {
 
 }
 
-link <- function() {
-
-    UseMethod("link")
-}
-
-unlink <- function(...) {
-
-    UseMethod("unlink")
-}
-
-entry <- function(...) {
-
-    UseMethod("entry")
-}
-
-reference <- function(...) {
-
-    UseMethod("reference")
-}
-
 description <- function(...) {
 
     UseMethod("description")
 }
 
-type <- function(...) {
-
-    UseMethod("type")
-}

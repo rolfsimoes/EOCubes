@@ -67,3 +67,61 @@ reference <- function(pr) {
 
     return(attr(pr, "reference"))
 }
+
+#### catalog ####
+
+# Detect the type on an entry
+entry_type <- function(en, default_type) {
+
+    type <- en$type
+
+    if (is.null(en$type))
+        type <- default_type
+
+    res <- check_entry(new_object(en, type = type))
+
+    return(res)
+}
+
+# Provide the capability to add items
+link <- function(...) {
+
+    UseMethod("link")
+}
+
+# Provide the capability to remove items
+unlink <- function(...) {
+
+    UseMethod("unlink")
+}
+
+# Provide capability to be an item of some catalog
+entry <- function(...) {
+
+    UseMethod("entry")
+}
+
+# Check for data consistency of some entry type
+check_entry <- function(...) {
+
+    UseMethod("check_entry")
+}
+
+# Show some description of some entry type
+describe_entry <- function(...) {
+
+    UseMethod("check_entry")
+}
+
+# Find the correct way to open an entry of some type
+open_entry <- function(...) {
+
+    UseMethod("open_entry")
+}
+
+open_entry.default <- function(en, default_type) {
+
+    res <- open_entry(entry_type(en, default_type = default_type))
+
+    return(res)
+}

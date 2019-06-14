@@ -1,11 +1,10 @@
 
 cast.eo_config_0.8 <- function(cf) {
 
-    if ((cf$type != "#config") || is.null(cf$items) || is.null(names(pr$items)) ||
-        any(sapply(cf$items, function(x) (is.null(x$href) || is.null(x$description) || is.null(x$type)))))
+    if ((cf$type != class(cf)) || is.null(cf$items) || is.null(names(cf$items)))
         stop("Invalid config file definition.", call. = FALSE)
 
-    # criar um handler para o type
+    cf$items <- lapply(cf$items, new_object, )
 
     return(cf)
 }

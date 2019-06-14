@@ -11,8 +11,7 @@ new_object <- function(x, type) {
         stop("The version of config file is not supported.", call. = FALSE)
 
     x$version <- version
-    res <- cast(structure(x, class = paste(type, c(version, ""), sep = "_")))
+    res <- structure(x, class = paste(type, c(version, ""), sep = "_"))
 
     return(res)
 }
-

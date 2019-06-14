@@ -31,7 +31,7 @@ unlink.eo_config_0.7 <- function(cf, name) {
     invisible(NULL)
 }
 
-provider.eo_config_0.7 <- function(cf, name) {
+open_entry.entry_eo_config_0.7 <- function(cf, name) {
 
     if (!name %in% names(cf$remotes))
         stop(sprintf("Provider entry '%s' not found.", name), call. = FALSE)
@@ -53,7 +53,7 @@ provider.eo_config_0.7 <- function(cf, name) {
     return(res)
 }
 
-list_providers.eo_config_0.7 <- function(cf) {
+list_entries.eo_config_0.7 <- function(cf) {
 
     return(names(cf$remotes))
 }
