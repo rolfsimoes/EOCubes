@@ -3,35 +3,21 @@ as_list <- function(...) {
     UseMethod("as_list")
 }
 
-as_list.eo_config <- function(cf) {
+as_list.default <- function(x) {
 
-    class(cf) <- NULL
+    class(x) <- NULL
 
-    return(cf)
+    return(x)
 }
 
-as_list.eo_provider <- function(pr) {
+cast <- function(...) {
 
-    class(pr) <- NULL
-
-    return(cf)
-}
-
-as_list.eo_cube <- function(cb) {
-
-    class(cb) <- NULL
-
-    return(cb)
+    UseMethod("cast")
 }
 
 list_providers <- function(...) {
 
     UseMethod("list_providers")
-}
-
-list_providers.eo_config <- function(cf) {
-
-
 }
 
 provider <- function(...) {
@@ -41,12 +27,33 @@ provider <- function(...) {
 
 provider.connection <- function(con) {
 
+    res <- new_object(open_json(con), "eo_provider")
 
+    attr(res, "reference") <- summary(con)[["description"]]
+
+    return(res)
 }
 
 provider.character <- function(name) {
 
+    res <- provider(.global[["conf"]], name = name)
 
+    return(res)
+}
+
+link_provider <- function(pr, name) {
+
+    link(.global[["conf"]], pr = pr, name = name)
+
+    invisible(NULL)
+}
+
+link_cube <- function(pr, cb) {
+
+    if (is.null(cb$id))
+        stop("Invalid cube data definition.", call. = FALSE)
+
+    link(pr, reference(cb), cb$id)
 }
 
 list_cubes <- function(...) {
@@ -54,36 +61,24 @@ list_cubes <- function(...) {
     UseMethod("list_cubes")
 }
 
-list_cubes.eo_provider <- function(pr) {
-
-
-}
-
 cube <- function(...) {
 
     UseMethod("cube")
 }
 
-cube.eo_provider <- function(pr = provider("localhost"),
-                             name, bands = NULL,
-                             from = NULL, to = NULL,
-                             geom = NULL, tiles = NULL) {
+cube.connection <- function(con, select_bands = NULL,
+                            interval_from = NULL, interval_to = NULL,
+                            in_geometry = NULL, select_tiles = NULL) {
 
+    res <- new_object(open_json(con), "eo_cube")
 
-}
+    res <- cube(res, select_bands = select_bands,
+                interval_from = interval_from, interval_to = interval_to,
+                in_geometry = in_geometry, select_tiles = select_tiles)
 
-cube.eo_cube <- function(cb, bands = NULL,
-                         from = NULL, to = NULL,
-                         geom = NULL, tiles = NULL) {
+    attr(res, "reference") <- summary(con)[["description"]]
 
-
-}
-
-cube.connection <- function(con, bands = NULL,
-                            from = NULL, to = NULL,
-                            geom = NULL, tiles = NULL) {
-
-
+    return(res)
 }
 
 bbox <- function(...) {
@@ -91,14 +86,15 @@ bbox <- function(...) {
     UseMethod("bbox")
 }
 
-bbox.eo_cube <- function(cb) {
+bbox.numeric <- function(x) {
 
+    if (length(x1) != 4)
+        stop("Invalid bbox parameters.", call. = FALSE)
 
-}
+    res <- c(xmin = x[[1]], ymin = x[[2]], xmax = x[[3]], ymax = x[[4]])
+    class(res) <- "bbox"
 
-bbox.numeric <- function(x1, y1 = NULL, x2 = NULL, y2 = NULL) {
-
-
+    return(res)
 }
 
 interval <- function(...) {
@@ -106,9 +102,12 @@ interval <- function(...) {
     UseMethod("interval")
 }
 
-interval.eo_cube <- function(cb) {
+interval.default <- function(from, to) {
 
+    res <- list(from = from, to = to)
+    class(res) <- "interval"
 
+    return(res)
 }
 
 crs <- function(...) {
@@ -116,19 +115,9 @@ crs <- function(...) {
     UseMethod("crs")
 }
 
-crs.eo_cube <- function(cb) {
-
-
-}
-
 bands <- function(...) {
 
     UseMethod("bands")
-}
-
-bands.eo_cube <- function(cb) {
-
-
 }
 
 tiles <- function(...) {
@@ -136,17 +125,7 @@ tiles <- function(...) {
     UseMethod("tiles")
 }
 
-tiles.eo_cube <- function(cb) {
-
-
-}
-
 geom <- function(...) {
-
-
-}
-
-geom.eo_cube <- function(cb, tiles = NULL) {
 
 
 }
@@ -156,29 +135,12 @@ info_bands <- function(...) {
     UseMethod("info_bands")
 }
 
-info_bands.eo_cube <- function(cb, bands = NULL) {
-
-
-}
-
 view <- function(...) {
 
     UseMethod("view")
 }
 
-view.eo_cube <- function(cb, st_date, st_period,
-                         time_len) {
-
-
-}
-
-viewJSON <- function(...) {
-
-    UseMethod("viewJSON")
-}
-
-viewJSON.eo_cube <- function(cb, st_date, st_period,
-                             time_len) {
+viewJSON <- function(cb, st_date, st_period, time_len) {
 
 
 }
@@ -188,27 +150,27 @@ link <- function() {
     UseMethod("link")
 }
 
-link.eo_provider <- function(pr, name) {
-
-
-}
-
-link.eo_cube <- function(cb, pr, name) {
-
-
-}
-
 unlink <- function(...) {
 
     UseMethod("unlink")
 }
 
-unlink.eo_provider <- function(pr) {
+entry <- function(...) {
 
-
+    UseMethod("entry")
 }
 
-unlink.eo_cube <- function(cb) {
+reference <- function(...) {
 
+    UseMethod("reference")
+}
 
+description <- function(...) {
+
+    UseMethod("description")
+}
+
+type <- function(...) {
+
+    UseMethod("type")
 }

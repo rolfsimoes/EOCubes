@@ -18,6 +18,8 @@ open_json.connection <- function(con) {
                               simplifyDataFrame = FALSE,
                               simplifyMatrix = FALSE)
 
+    attr(res, "reference") <- summary(con)[["description"]]
+
     return(res)
 }
 
@@ -28,7 +30,7 @@ load_config <- function(...) {
 
 load_config.connection <- function(con) {
 
-    .global[["conf"]] <- new_object(open_json(con), type = "config", res$version)
+    .global[["conf"]] <- new_object(open_json(con), type = "eo_config")
 
     invisible(NULL)
 }
@@ -59,4 +61,9 @@ ifnull <- function(x, value) {
     if (is.null(x))
         return(value)
     return(x)
+}
+
+reference <- function(pr) {
+
+    return(attr(pr, "reference"))
 }
