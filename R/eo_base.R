@@ -1,10 +1,6 @@
+#### functions ####
 
-open_json <- function(...) {
-
-    UseMethod("open_json")
-}
-
-open_json.connection <- function(con) {
+open_json <- function(con) {
 
     txt <- tryCatch(
         suppressWarnings(readLines(con, warn = FALSE)),
@@ -18,32 +14,14 @@ open_json.connection <- function(con) {
                               simplifyDataFrame = FALSE,
                               simplifyMatrix = FALSE)
 
-    attr(res, "reference") <- summary(con)[["description"]]
+    reference(res) <- summary(con)[["description"]]
 
     return(res)
 }
 
-load_config <- function(...) {
+save_json <- function(x, con) {
 
-    UseMethod("load_config")
-}
-
-load_config.connection <- function(con) {
-
-    .global[["conf"]] <- new_object(open_json(con), type = "eo_config")
-
-    invisible(NULL)
-}
-
-save_config <- function(...) {
-
-    UseMethod("save_config")
-}
-
-save_config.connection <- function(con) {
-
-    txt <- jsonlite::toJSON(as_list(.global[["conf"]]),
-                            pretty = TRUE, auto_unbox = TRUE)
+    txt <- jsonlite::toJSON(as_list(x), pretty = TRUE, auto_unbox = TRUE)
 
     tryCatch(
         suppressWarnings(writeLines(txt, con, useBytes = TRUE)),
@@ -65,63 +43,143 @@ ifnull <- function(x, value) {
 
 reference <- function(pr) {
 
-    return(attr(pr, "reference"))
+    return(attr(pr, "reference", TRUE))
 }
 
-#### catalog ####
+`reference<-` <- function(pr, value) {
 
-# Detect the type on an entry
-entry_type <- function(en, default_type) {
+    attr(pr, "reference", TRUE) <- value
 
-    type <- en$type
+    invisible(NULL)
+}
 
-    if (is.null(en$type))
-        type <- default_type
+bbox.default <- function(x) {
 
-    res <- check_entry(new_object(en, type = type))
+    if (length(x1) != 4)
+        stop("Invalid bbox parameters.", call. = FALSE)
+
+    res <- c(xmin = x[[1]], ymin = x[[2]], xmax = x[[3]], ymax = x[[4]])
+    class(res) <- "bbox"
 
     return(res)
 }
 
-# Provide the capability to add items
-link <- function(...) {
+interval.default <- function(from, to) {
 
-    UseMethod("link")
+    res <- list(from = from, to = to)
+    class(res) <- "interval"
+
+    return(res)
 }
 
-# Provide the capability to remove items
-unlink <- function(...) {
+cast <- function(x, type) {
 
-    UseMethod("unlink")
+    version <- ifnull(x$version, supported_versions()[[1]])
+
+    if (all(supported_versions() != version))
+        stop("The catalog version is not supported.", call. = FALSE)
+
+    x$version <- version
+
+    type <- paste(type, c(version, ""), sep = "_")
+
+    res <- check(structure(x, class = type))
+
+    return(res)
 }
 
-# Provide capability to be an item of some catalog
-entry <- function(...) {
+cast_entry <- function(x, default_type) {
 
-    UseMethod("entry")
+    type <- ifnull(x$type, default_type)
+
+    res <- check_entry(structure(x, class = type))
+
+    return(res)
 }
 
-# Check for data consistency of some entry type
+#### entry ####
+
+# Provide the capability to be an item of some catalog
+as_entry <- function(...) {
+
+    UseMethod("as_entry")
+}
+
+# Show a description of some entry type
+describe_entry <- function(...) {
+
+    UseMethod("describe_entry")
+}
+
+# [>=0.8] Check for data consistency of some entry type
 check_entry <- function(...) {
 
     UseMethod("check_entry")
 }
 
-# Show some description of some entry type
-describe_entry <- function(...) {
-
-    UseMethod("check_entry")
-}
-
-# Find the correct way to open an entry of some type
+# [>=0.8] Find the correct way to open an entry of some type
 open_entry <- function(...) {
 
     UseMethod("open_entry")
 }
 
-open_entry.default <- function(en, default_type) {
+#### catalog ####
 
-    res <- open_entry(entry_type(en, default_type = default_type))
+# >>catalog
+# as_list
+# check
+# description
+# add_entry
+# del_entry
+# list_entries
+# as_entry
+#
+# >>entry
+# describe_entry
+# check_entry
+# open_entry
+#
 
-    return(res)
+# convert the object to a list data
+as_list <- function(...) {
+
+    UseMethod("as_list")
 }
+
+as_list.default <- function(x) {
+
+    class(x) <- NULL
+
+    return(x)
+}
+
+# Check for the consistency of the internal data
+check <- function(...) {
+
+    UseMethod("check")
+}
+
+# Get a description of the catalog
+description <- function(...) {
+
+    UseMethod("description")
+}
+
+# Provide the capability to add items
+add_item <- function(...) {
+
+    UseMethod("link")
+}
+
+# Provide the capability to remove items
+del_item <- function(...) {
+
+    UseMethod("unlink")
+}
+
+# Provide the capability to list the items of the catalog
+list_items <- function(...) {
+
+    UseMethod("list_items")
+}
+

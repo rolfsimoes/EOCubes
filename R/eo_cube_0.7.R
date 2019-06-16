@@ -1,5 +1,63 @@
+new_eo_cube_0.7 <- function(files, tiles, bands, dates, files_url, bands_info, project_dir) {
 
-cast.eo_cube_0.7 <- function(cb) {
+    invisible(NULL)
+}
+
+cube.eo_cube <- function(cb, bands = NULL, from = NULL, to = NULL, geom = NULL, tiles = NULL) {
+
+    cube_bands(cb) <- bands
+
+    cube_interval(cb) <- interval(from, to)
+
+    cube_geom(cb) <- geom
+
+    cube_tiles(cb) <- tiles
+
+    return(cb)
+}
+
+#### cube entry ####
+
+as_entry.eo_cube <- function(cb) {
+
+    res <- list(href = reference(cb), description = description(cb))
+
+    return(res)
+}
+
+describe_entry.eo_cube <- function(en) {
+
+    return(en$description)
+}
+
+check_entry.eo_cube <- function(en) {
+
+    if (is.null(en$href) || is.null(en$description))
+        stop("Invalid entry.", call. = FALSE)
+
+    invisible(NULL)
+}
+
+open_entry.eo_cube <- function(en) {
+
+    con <- tryCatch(
+        suppressWarnings(file(en$href)),
+        error = function(e) {
+
+            stop(sprintf(paste("Invalid file location '%s'.",
+                               "Reported error: %s"), en$href, e$message), call. = FALSE)
+        })
+
+    res <- cube(con)
+
+    close(con)
+
+    return(res)
+}
+
+#### cube catalog ####
+
+check.eo_cube <- function(cb) {
 
     if (is.null(cb$id) || is.null(cb$meta) || is.null(cb$tiles) || is.null(names(cb$tiles)) ||
         any(sapply(cb$meta, function(x) (is.null(x$crs) || is.null(x$bands) ||
@@ -11,84 +69,114 @@ cast.eo_cube_0.7 <- function(cb) {
     return(cb)
 }
 
-entry.eo_cube_0.7 <- function(cb) {
+#### cube get/set ####
+description.eo_cube <- function(cb) {
 
-    res <- list(type = class(cb), href = reference(cb), description = description(cb),
-                class = class(cb))
-
-    return(res)
+    return(cb$description)
 }
 
-open_entry.eo_cube_0.7 <- function(en) {
+cube_name.eo_cube <- function(cb) {
 
-    con <- tryCatch(
-        suppressWarnings(file(en$href)),
-        error = function(e) {
-
-            stop(sprintf(paste("Invalid file location '%s'.",
-                               "Reported error: %s"), en$href, e$message), call. = FALSE)
-        })
-
-    res <- cube(con, select_bands = select_bands,
-                interval_from = interval_from, interval_to = interval_to,
-                in_geometry = in_geometry, select_tiles = select_tiles)
-
-    close(con)
-
-    return(res)
+    return(cb$id)
 }
 
-cube.eo_cube_0.7 <- function(cb, select_bands = NULL,
-                             interval_from = NULL, interval_to = NULL,
-                             in_geometry = NULL, select_tiles = NULL) {
+cube_bands.eo_cube <- function(cb) {
 
-    bands(cb) <- select_bands
+    attr(cb, "bands", TRUE) <- ifnull(attr(cb, "bands", TRUE), names(cb$meta$bands))
 
-    interval(cb) <- interval(interval_from, interval_to)
-
-    geom(cb) <- in_geometry
-
-    tiles(cb) <- select_tiles
-
-    return(cb)
+    return(attr(cb, "bands", TRUE))
 }
 
-bbox.eo_cube_0.7 <- function(cb) {
+`cube_bands<-.eo_cube` <- function(cb, bands) {
 
-    return(bbox(cb$meta$extent$bbox))
+    if (is.null(bands))
+        bands <- names(cb$meta$bands)
+
+    if (any(!bands %in% names(cb$meta$bands)))
+        stop("Band does not exist.", call. = FALSE)
+
+    attr(cb, "bands", TRUE) <- ifnull(bands, attr(cb, "bands", TRUE))
+
+    invisible(NULL)
 }
 
-interval.eo_cube_0.7 <- function(cb) {
+interval.eo_cube <- function(cb) {
 
-    return(interval(from = cb$meta$interval$from, to = cb$meta$interval$to))
+    attr(cb, "interval", TRUE) <- ifnull(attr(cb, "interval", TRUE), interval(from = cb$meta$interval$from, to = cb$meta$interval$to))
+
+    return(attr(cb, "interval", TRUE))
 }
 
-crs.eo_cube_0.7 <- function(cb) {
+`interval<-.eo_cube` <- function(cb, value) {
+
+    if (is.null(value))
+        value <- interval(from = cb$meta$interval$from, to = cb$meta$interval$to)
+
+    if (!inherits(value, "interval"))
+        stop("Invalid interval.", call. = FALSE)
+
+    attr(cb, "interval", TRUE) <- value
+
+    invisible(NULL)
+}
+
+cube_geom.eo_cube <- function(cb, tiles = NULL) {
+
+    if (is.null(tiles))
+        tiles <- rep(TRUE, length(cb$tiles))
+
+    if ((is.logical(tiles) && length(tiles) != length(cb$tiles)) ||
+        (is.numeric(tiles) && max(tiles) > length(cb$tiles)) ||
+        (is.character(tiles) && any(!tiles %in% names(cb$tiles))))
+        stop("Invalid tiles parameter.", call. = FALSE)
+
+    attr(cb, "geom", TRUE) <- ifnull(attr(cb, "geom", TRUE), as_geometry(cb$tiles[tiles]))
+
+    return(attr(cb, "geom", TRUE))
+}
+
+`cube_geom<-.eo_cube` <- function(cb, value) {
+
+    # intersection with tiles geometries
+    invisible(NULL)
+}
+
+cube_tiles.eo_cube <- function(cb) {
+
+    attr(cb, "tiles", TRUE) <- ifnull(attr(cb, "tiles", TRUE), names(cb$tiles))
+
+    return(attr(cb, "tiles", TRUE))
+}
+
+`cube_tiles<-.eo_cube` <- function(cb, value) {
+
+    if (is.null(value))
+        value <- names(cb$tiles)
+
+    if (any(!value %in% names(cb$tiles)))
+        stop("Invalid tile.", call. = FALSE)
+
+    attr(cb, "tiles", TRUE) <- ifnull(attr(cb, "tiles", TRUE), names(cb$tiles))
+
+    return(attr(cb, "tiles", TRUE))
+}
+
+cube_crs.eo_cube <- function(cb) {
 
     return(cb$meta$crs)
 }
 
-bands.eo_cube_0.7 <- function(cb) {
+bbox.eo_cube <- function(cb) {
 
-    return(names(cb$meta$bands))
+    # return bbox of geom
 }
 
-tiles.eo_cube_0.7 <- function(cb) {
+info_bands.eo_cube <- function(cb) {
 
-    return(names(cb$tiles))
+    return(cb$meta$bands[cube_bands(cb)])
 }
 
-geom.eo_cube_0.7 <- function(cb, tiles = NULL) {
-
-
-}
-
-info_bands.eo_cube_0.7 <- function(cb, bands = NULL) {
-
-
-}
-
-view.eo_cube_0.7 <- function(cb, st_date, st_period, time_len) {
+view.eo_cube <- function(cb, st_date, st_period, time_len) {
 
 
 }

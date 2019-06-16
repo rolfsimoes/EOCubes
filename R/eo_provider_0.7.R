@@ -1,21 +1,40 @@
 
-cast.eo_provider_0.7 <- function(pr) {
+cube.eo_provider <- function(pr = provider("localhost"), name,
+                             bands = NULL, from = NULL, to = NULL, geom = NULL, tiles = NULL) {
 
-    if (is.null(pr$description) || is.null(pr$cubes) || is.null(names(pr$cubes)) ||
-        any(sapply(pr$cubes, function(x) (is.null(x$href) || is.null(x$description)))))
-        stop("Invalid provider file definition.", call. = FALSE)
+    if (!name %in% names(pr$cubes))
+        stop(sprintf("Cube entry '%s' not found.", name), call. = FALSE)
 
-    return(pr)
-}
+    res <- open_entry(cast_entry(pr[[name]], default_type = "eo_cube_0.7"))
 
-entry.eo_provider_0.7 <- function(pr) {
-
-    res <- list(type = class(pr), href = reference(pr), description = description(pr))
+    res <- cube(res, bands = bands, from = from, to = to, geom = geom, tiles = tiles)
 
     return(res)
 }
 
-open_entry.eo_provider_0.7 <- function(en) {
+#### provider entry ####
+
+as_entry.eo_provider <- function(pr) {
+
+    res <- list(href = reference(pr), description = description(pr))
+
+    return(res)
+}
+
+describe_entry.eo_provider <- function(en) {
+
+    return(en$description)
+}
+
+check_entry.eo_provider <- function(en) {
+
+    if (is.null(en$href) || is.null(en$description))
+        stop("Invalid entry.", call. = FALSE)
+
+    invisible(NULL)
+}
+
+open_entry.eo_provider <- function(en) {
 
     con <- tryCatch(
         suppressWarnings(file(en$href)),
@@ -32,7 +51,32 @@ open_entry.eo_provider_0.7 <- function(en) {
     return(res)
 }
 
-link.eo_provider_0.7 <- function(pr, cb, name) {
+#### provider catalog ####
+
+as_list.eo_provider <- function(pr) {
+
+    pr$cubes <- as.list(pr$cubes)
+
+    return(pr)
+}
+
+check.eo_provider <- function(pr) {
+
+    if (is.null(pr$description) || is.null(pr$cubes) || is.null(names(pr$cubes)) ||
+        any(sapply(pr$cubes, function(x) (is.null(x$href) || is.null(x$description)))))
+        stop("Invalid provider file definition.", call. = FALSE)
+
+    pr$cubes <- as.environment(pr$cubes)
+
+    return(pr)
+}
+
+description.eo_provider <- function(pr) {
+
+    return(pr$description)
+}
+
+add_item.eo_provider <- function(pr, cb, name) {
 
     if (!inherits(cb, "eo_cube"))
         stop("Invalid cube.", call. = FALSE)
@@ -40,50 +84,22 @@ link.eo_provider_0.7 <- function(pr, cb, name) {
     if (name %in% names(pr$cubes))
         stop(sprintf("Cube entry '%s' already exists.", name), call. = FALSE)
 
-    pr$cubes[[name]] <- list(href = reference(cb), description = description(cb))
+    pr$cubes[[name]] <- as_entry(cb)
 
     invisible(NULL)
 }
 
-list_cubes.eo_provider_0.7 <- function(pr) {
-
-    return(names(pr$cubes))
-}
-
-cube.eo_provider_0.7 <- function(pr = provider("localhost"),
-                                 name, select_bands = NULL,
-                                 interval_from = NULL, interval_to = NULL,
-                                 in_geometry = NULL, select_tiles = NULL) {
-
+del_item.eo_provider <- function(pr, name) {
 
     if (!name %in% names(pr$cubes))
         stop(sprintf("Cube entry '%s' not found.", name), call. = FALSE)
 
-    href <- pr$cubes[[name]]$href
+    pr$cubes[[name]] <- NULL
 
-    con <- tryCatch(
-        suppressWarnings(file(href)),
-        error = function(e) {
-
-            stop(sprintf(paste("Invalid file location '%s'.",
-                               "Reported error: %s"), href, e$message), call. = FALSE)
-        })
-
-    res <- cube(con, select_bands = select_bands,
-                interval_from = interval_from, interval_to = interval_to,
-                in_geometry = in_geometry, select_tiles = select_tiles)
-
-    close(con)
-
-    return(res)
+    invisible(NULL)
 }
 
-description.eo_provider_0.7 <- function(pr) {
+list_items.eo_provider <- function(pr) {
 
-    return(pr$description)
-}
-
-type.eo_provider_0.7 <- function(pr) {
-
-    return("eo_provider")
+    return(names(pr$cubes))
 }
