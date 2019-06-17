@@ -1,18 +1,8 @@
-provider.eo_config <- function(cf, name) {
-
-    if (!name %in% names(cf$remotes))
-        stop(sprintf("Provider entry '%s' not found.", name), call. = FALSE)
-
-    res <- open_entry(cast_entry(cf$remotes[[name]], default_type = "eo_provider_0.7"))
-
-    return(res)
-}
-
 #### config catalog ####
 
 check.eo_config <- function(cf) {
 
-    if (is.null(cf$remotes) || is.null(names(pr$remotes)) ||
+    if (is.null(cf$remotes) || is.null(names(cf$remotes)) ||
         any(sapply(cf$remotes, function(x) (is.null(x$href) || is.null(x$description)))))
         stop("Invalid config file definition.", call. = FALSE)
 
@@ -24,7 +14,7 @@ add_item.eo_config <- function(cf, pr, name) {
     if (!inherits(pr, "eo_provider"))
         stop("Invalid provider.", call. = FALSE)
 
-    if (name %in% names(cf$remotes))
+    if (exists_item(cf, name))
         stop(sprintf("Provider entry '%s' already exists.", name), call. = FALSE)
 
     cf$remotes[[name]] <- as_entry(pr)
@@ -34,7 +24,7 @@ add_item.eo_config <- function(cf, pr, name) {
 
 del_item.eo_config <- function(cf, name) {
 
-    if (!name %in% names(cf$remotes))
+    if (!exists_item(cf, name))
         stop(sprintf("Provider entry '%s' not found.", name), call. = FALSE)
 
     cf$remotes[[name]] <- NULL
@@ -45,4 +35,9 @@ del_item.eo_config <- function(cf, name) {
 list_items.eo_config <- function(cf) {
 
     return(names(cf$remotes))
+}
+
+exists_item.eo_config <- function(cf, name) {
+
+    return(all(name %in% names(cf$remotes)))
 }

@@ -1,17 +1,4 @@
 
-cube.eo_provider <- function(pr = provider("localhost"), name,
-                             bands = NULL, from = NULL, to = NULL, geom = NULL, tiles = NULL) {
-
-    if (!name %in% names(pr$cubes))
-        stop(sprintf("Cube entry '%s' not found.", name), call. = FALSE)
-
-    res <- open_entry(cast_entry(pr[[name]], default_type = "eo_cube_0.7"))
-
-    res <- cube(res, bands = bands, from = from, to = to, geom = geom, tiles = tiles)
-
-    return(res)
-}
-
 #### provider entry ####
 
 as_entry.eo_provider <- function(pr) {
@@ -36,13 +23,7 @@ check_entry.eo_provider <- function(en) {
 
 open_entry.eo_provider <- function(en) {
 
-    con <- tryCatch(
-        suppressWarnings(file(en$href)),
-        error = function(e) {
-
-            stop(sprintf(paste("Invalid file location '%s'.",
-                               "Reported error: %s"), en$href, e$message), call. = FALSE)
-        })
+    con <- new_connection(en$href)
 
     res <- provider(con)
 
@@ -81,7 +62,7 @@ add_item.eo_provider <- function(pr, cb, name) {
     if (!inherits(cb, "eo_cube"))
         stop("Invalid cube.", call. = FALSE)
 
-    if (name %in% names(pr$cubes))
+    if (exists_item(pr, name = name))
         stop(sprintf("Cube entry '%s' already exists.", name), call. = FALSE)
 
     pr$cubes[[name]] <- as_entry(cb)
@@ -91,7 +72,7 @@ add_item.eo_provider <- function(pr, cb, name) {
 
 del_item.eo_provider <- function(pr, name) {
 
-    if (!name %in% names(pr$cubes))
+    if (!exists_item(pr, name = name))
         stop(sprintf("Cube entry '%s' not found.", name), call. = FALSE)
 
     pr$cubes[[name]] <- NULL
@@ -102,4 +83,9 @@ del_item.eo_provider <- function(pr, name) {
 list_items.eo_provider <- function(pr) {
 
     return(names(pr$cubes))
+}
+
+exists_item.eo_provider <- function(pr, name) {
+
+    return(all(name %in% names(pr$cubes)))
 }

@@ -1,13 +1,15 @@
+default_provider <- function() {
+
+    res <- cast(list(version = "0.7",
+                     description = "Local provider",
+                     cubes = list()), type = "eo_provider")
+
+    return(res)
+}
+
 provider <- function(...) {
 
     UseMethod("provider")
-}
-
-provider.connection <- function(con) {
-
-    res <- cast(open_json(con), default_type = "eo_provider")
-
-    return(res)
 }
 
 provider.character <- function(name) {
@@ -17,12 +19,34 @@ provider.character <- function(name) {
     return(res)
 }
 
+provider.connection <- function(con) {
+
+    value <- tryCatch(open_json(con),
+                      error = function(e) {
+
+                          default <- default_provider()
+                          save_json(default, con = con)
+                          return(default)
+                      })
+
+    res <- cast(value, default_type = "eo_provider")
+
+    return(res)
+}
+
+save_provider <- function(pr, con) {
+
+    save_json(pr, con = con)
+
+    invisible(NULL)
+}
+
 add_cube <- function(pr, cb) {
 
     if (!inherits(pr, "eo_provider"))
         stop("Invalid provider.", call. = FALSE)
 
-    add_item(pr, cb, name(cb))
+    add_item(pr, cb, cube_name(cb))
 
     invisible(NULL)
 }
@@ -43,4 +67,18 @@ list_cubes <- function(pr) {
         stop("Invalid provider.", call. = FALSE)
 
     return(list_items(pr))
+}
+
+cube.eo_provider <- function(pr, name, bands = NULL, from = NULL, to = NULL,
+                             geom = NULL, tiles = NULL, slices = NULL) {
+
+    if (!exists_item(pr, name = name))
+        stop(sprintf("Cube entry '%s' not found.", name), call. = FALSE)
+
+    res <- open_entry(cast_entry(pr[[name]], default_type = "eo_cube_0.7"))
+
+    res <- cube(res, bands = bands, from = from, to = to, geom = geom,
+                tiles = tiles, slices = slices)
+
+    return(res)
 }

@@ -1,17 +1,38 @@
 default_config <- function() {
 
-    res <- tryCatch(file("~/.EOCubes/config.json"),
-                    error = function(e) {
+    res <- cast(list(version = "0.7",
+                     remotes = list()), type = "eo_config")
 
-                        file.create()
-                    }
-    )
     return(res)
 }
 
-load_config <- function(con) {
+config <- function(...) {
 
-    .global[["conf"]] <- cast(open_json(con), type = "eo_config")
+    UseMethod("config")
+}
+
+config.default <- function() {
+
+    con <- new_connection("~/.EOCubes/config.json")
+
+    res <- config(con)
+
+    close(con)
+
+    return(res)
+}
+
+config.connection <- function(con) {
+
+    value <- tryCatch(open_json(con),
+                      error = function(e) {
+
+                          default <- default_config()
+                          save_json(default, con = con)
+                          return(default)
+                      })
+
+    .global[["conf"]] <- cast(value, default_type = "eo_config")
 
     invisible(NULL)
 }
@@ -25,19 +46,29 @@ save_config <- function(con) {
 
 add_provider <- function(pr, name) {
 
-    add_entry(.global[["conf"]], pr = pr, name = name)
+    add_item(.global[["conf"]], pr = pr, name = name)
 
     invisible(NULL)
 }
 
 del_provider <- function(pr, name) {
 
-    del_entry(.global[["conf"]], name = name)
+    del_item(.global[["conf"]], name = name)
 
     invisible(NULL)
 }
 
 list_providers <- function() {
 
-    return(list_entries(.global[["conf"]]))
+    return(list_items(.global[["conf"]]))
+}
+
+provider.eo_config <- function(cf, name) {
+
+    if (!exists_item(cf, name))
+        stop(sprintf("Provider entry '%s' not found.", name), call. = FALSE)
+
+    res <- open_entry(cast_entry(cf$remotes[[name]], default_type = "eo_provider_0.7"))
+
+    return(res)
 }
