@@ -72,10 +72,7 @@ cube_bands.eo_cube <- function(cb) {
 
 `cube_bands<-.eo_cube` <- function(cb, bands) {
 
-    if (is.null(bands))
-        bands <- names(cb$meta$bands)
-
-    if (any(is.na(bands)) || any(!bands %in% names(cb$meta$bands)))
+    if (!is.null(bands) && (any(is.na(bands)) || any(!bands %in% names(cb$meta$bands))))
         stop("Invalid `bands` list.", call. = FALSE)
 
     attr(cb, "bands", TRUE) <- ifnull(bands, names(cb$meta$bands))
@@ -94,13 +91,10 @@ cube_interval.eo_cube <- function(cb) {
 
 `cube_interval<-.eo_cube` <- function(cb, value) {
 
-    if (is.null(value))
-        value <- interval(from = cb$meta$interval$from, to = cb$meta$interval$to)
-
-    if (!inherits(value, "interval"))
+    if (!is.null(value) && !inherits(value, "interval"))
         stop("Invalid interval.", call. = FALSE)
 
-    attr(cb, "interval", TRUE) <- value
+    attr(cb, "interval", TRUE) <- ifnull(value, interval(from = cb$meta$interval$from, to = cb$meta$interval$to))
 
     invisible(NULL)
 }
@@ -112,24 +106,22 @@ cube_geom.eo_cube <- function(cb) {
 
 `cube_geom<-.eo_cube` <- function(cb, value) {
 
-    if (is.null(value)) {
-
-        value <- cube_bbox(cb)
-    } else if (inherits(value, "bbox")) {
+    if (inherits(value, "bbox")) {
 
         # do nothing
     } else if (inherits(value, "character")) {
 
         if (!requireNamespace("sf", quietly = TRUE))
             stop("You need `sf` package to inform a geometry.", call. = FALSE)
-        value <- sf::read_sf(value)
 
+        value <- sf::st_transform(sf::read_sf(value), crs = cube_crs(cube = cube))
     } else if (inherits(value, c("sfc", "sf"))) {
 
         if (!requireNamespace("sf", quietly = TRUE))
             stop("You need `sf` package to inform a geometry.", call. = FALSE)
-        # do nothing
-    } else
+
+        value <- sf::st_transform(value, crs = cube_crs(cube = cube))
+    } else if (!is.null(value))
         stop("Invalid `geom` value.", call. = FALSE)
 
     attr(cb, "geom", TRUE) <- value
@@ -147,13 +139,10 @@ cube_tiles.eo_cube <- function(cb) {
 
 `cube_tiles<-.eo_cube` <- function(cb, value) {
 
-    if (is.null(value))
-        value <- names(cb$tiles)
-
-    if (any(is.na(value)) || any(!value %in% names(cb$tiles)))
+    if (!is.null(value) && (any(is.na(value)) || any(!value %in% names(cb$tiles))))
         stop("Invalid `tiles` list.", call. = FALSE)
 
-    attr(cb, "tiles", TRUE) <- ifnull(attr(cb, "tiles", TRUE), names(cb$tiles))
+    attr(cb, "tiles", TRUE) <- ifnull(value, names(cb$tiles))
 
     invisible(NULL)
 }

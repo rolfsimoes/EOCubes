@@ -10,7 +10,8 @@ NULL
 # on load
 .onLoad <- function(lib, pkg) {
 
-    load_config()
+    con <- file("~/.EOCubes/config.json")
+    config(con) # close connection internally?
     save_config()
     load_cache()
 }
