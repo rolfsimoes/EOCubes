@@ -1,4 +1,14 @@
-supported_versions <- function() {
+supported_versions <- function(type = NULL) {
 
-    return(package_version(c("0.7")))
+    res <- list(eo_config = package_version("0.7"),
+                eo_provider = package_version("0.7"),
+                eo_cube = package_version("0.7"))
+
+    if (is.null(type))
+        return(res)
+
+    if (!type %in% names(res))
+        stop("The catalog `type` is not supported.", call. = FALSE)
+
+    return(res[[type]])
 }

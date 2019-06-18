@@ -11,7 +11,26 @@ new_connection <- function(path) {
     return(res)
 }
 
-open_json <- function(con) {
+new_eo_object <- function(x, type) {
+
+    if (!type %in% names(supported_versions()))
+        stop("The catalog `type` is not supported.", call. = FALSE)
+
+    version <- ifnull(x$version, supported_versions(type)[[1]])
+
+    if (all(supported_versions(type) != version))
+        stop("The catalog `version` is not supported.", call. = FALSE)
+
+    res <- check(structure(x, class = paste(type, c(version, ""), sep = "_")))
+
+    attr(res, "context", TRUE) <- new.env()
+
+    return(res)
+}
+
+open_eo_object <- function(con, type) {
+
+    must_close <- !isOpen(con)
 
     txt <- tryCatch(
         suppressWarnings(readLines(con, warn = FALSE)),
@@ -23,12 +42,19 @@ open_json <- function(con) {
                               simplifyDataFrame = FALSE,
                               simplifyMatrix = FALSE)
 
+    res <- new_eo_object(res, type = type)
+
     reference(res) <- summary(con)[["description"]]
+
+    if (must_close)
+        close(con)
 
     return(res)
 }
 
-save_json <- function(x, con) {
+save_eo_object <- function(x, con) {
+
+    must_close <- !isOpen(con)
 
     txt <- jsonlite::toJSON(as_list(x), pretty = TRUE, auto_unbox = TRUE)
 
@@ -38,22 +64,27 @@ save_json <- function(x, con) {
             stop(sprintf(paste("Error while saving JSON file.",
                                "Reported error: %s"), e$message), call. = FALSE))
 
+    reference(x) <- summary(con)[["description"]]
+
+    if (must_close)
+        close(con)
+
     invisible(NULL)
 }
 
-reference <- function(pr) {
+reference <- function(x) {
 
-    return(attr(pr, "reference", TRUE))
+    return(attr(x, "context", TRUE)[["reference"]])
 }
 
-`reference<-` <- function(pr, value) {
+`reference<-` <- function(x, value) {
 
     tryCatch(close(new_connection(value)),
              error = function(e)
                  stop(sprintf(paste("Invalid `reference` '%s'.",
                                     "Reported error: %s"), value, e$message), call. = FALSE))
 
-    attr(pr, "reference", TRUE) <- value
+    attr(x, "context", TRUE)[["reference"]] <- value
 
     invisible(NULL)
 }
@@ -66,27 +97,34 @@ ifnull <- function(x, value) {
     return(x)
 }
 
-cast <- function(x, type) {
-
-    version <- ifnull(x$version, supported_versions()[[1]])
-
-    if (all(supported_versions() != version))
-        stop("The catalog version is not supported.", call. = FALSE)
-
-    x$version <- version
-
-    type <- paste(type, c(version, ""), sep = "_")
-
-    res <- check(structure(x, class = type))
-
-    return(res)
-}
-
+# cast <- function(x, type) {
+#
+#     if (!type %in% names(supported_versions()))
+#         stop("The catalog `type` is not supported.", call. = FALSE)
+#
+#     version <- ifnull(x$version, supported_versions(type)[[1]])
+#
+#     if (all(supported_versions(type) != version))
+#         stop("The catalog `version` is not supported.", call. = FALSE)
+#
+#     res <- check(structure(x, class = paste(type, c(version, ""), sep = "_")))
+#
+#     return(res)
+# }
+#
 cast_entry <- function(x, default_type) {
 
     type <- ifnull(x$type, default_type)
 
-    res <- check_entry(structure(x, class = type))
+    if (!type %in% names(supported_versions()))
+        stop("The catalog `type` is not supported.", call. = FALSE)
+
+    version <- ifnull(x$version, supported_versions(type)[[1]])
+
+    if (all(supported_versions(type) != version))
+        stop("The catalog `version` is not supported.", call. = FALSE)
+
+    res <- check_entry(structure(x, class = paste(type, c(version, ""), sep = "_")))
 
     return(res)
 }
@@ -105,13 +143,13 @@ describe_entry <- function(...) {
     UseMethod("describe_entry")
 }
 
-# [>=0.8] Check for data consistency of some entry type
+# Check for data consistency of some entry type
 check_entry <- function(...) {
 
     UseMethod("check_entry")
 }
 
-# [>=0.8] Find the correct way to open an entry of some type
+# Find the correct way to open an entry of some type
 open_entry <- function(...) {
 
     UseMethod("open_entry")
@@ -162,13 +200,13 @@ description <- function(...) {
 # Provide the capability to add items
 add_item <- function(...) {
 
-    UseMethod("link")
+    UseMethod("add_item")
 }
 
 # Provide the capability to remove items
 del_item <- function(...) {
 
-    UseMethod("unlink")
+    UseMethod("del_item")
 }
 
 # Provide the capability to list the items of the catalog
@@ -181,4 +219,10 @@ list_items <- function(...) {
 exists_item <- function(...) {
 
     UseMethod("exists_item")
+}
+
+# Verify if an item exists
+get_item <- function(...) {
+
+    UseMethod("get_item")
 }

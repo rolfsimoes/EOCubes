@@ -1,8 +1,8 @@
 default_provider <- function() {
 
-    res <- cast(list(version = "0.7",
-                     description = "Local provider",
-                     cubes = list()), type = "eo_provider")
+    res <- new_eo_object(list(version = "0.7",
+                              description = "Local provider",
+                              cubes = list()), type = "eo_provider")
 
     return(res)
 }
@@ -21,22 +21,20 @@ provider.character <- function(name) {
 
 provider.connection <- function(con) {
 
-    value <- tryCatch(open_json(con),
-                      error = function(e) {
+    res <- tryCatch(open_eo_object(con),
+                    error = function(e) {
 
-                          default <- default_provider()
-                          save_json(default, con = con)
-                          return(default)
-                      })
-
-    res <- cast(value, default_type = "eo_provider")
+                        default <- default_provider()
+                        save_json(default, con = con)
+                        return(default)
+                    })
 
     return(res)
 }
 
 save_provider <- function(pr, con) {
 
-    save_json(pr, con = con)
+    save_eo_object(pr, con = con)
 
     invisible(NULL)
 }
@@ -75,7 +73,7 @@ cube.eo_provider <- function(pr, name, bands = NULL, from = NULL, to = NULL,
     if (!exists_item(pr, name = name))
         stop(sprintf("Cube entry '%s' not found.", name), call. = FALSE)
 
-    res <- open_entry(cast_entry(pr[[name]], default_type = "eo_cube_0.7"))
+    res <- open_entry(cast_entry(get_item(pr, name), default_type = "eo_cube")))
 
     res <- cube(res, bands = bands, from = from, to = to, geom = geom,
                 tiles = tiles, slices = slices)

@@ -41,3 +41,11 @@ exists_item.eo_config <- function(cf, name) {
 
     return(all(name %in% names(cf$remotes)))
 }
+
+get_item.eo_config <- function(cf, name) {
+
+    if (!exists_item(cf, name))
+        stop(sprintf("Provider entry '%s' not found.", name), call. = FALSE)
+
+    return(cf$remotes[[name]])
+}

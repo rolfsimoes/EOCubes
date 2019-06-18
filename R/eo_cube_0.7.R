@@ -42,8 +42,7 @@ check.eo_cube <- function(cb) {
 
     if (is.null(cb$id) || is.null(cb$meta) || is.null(cb$tiles) || is.null(names(cb$tiles)) ||
         any(sapply(cb$meta, function(x) (is.null(x$crs) || is.null(x$bands) ||
-                                         is.null(x$raster) || is.null(x$extent) ||
-                                         is.null(x$interval)))) ||
+                                         is.null(x$extent) || is.null(x$interval)))) ||
         any(sapply(cb$tiles, function(x) (is.null(x$href) || is.null(x$extent)))))
         stop("Invalid cube file definition.", call. = FALSE)
 
@@ -182,25 +181,106 @@ fetch.eo_cube <- function(cb) {
     if (is.null(cube_slices(cb)))
         stop("Invalid `slices` value.", call. = FALSE)
 
+    if (inherits(cube_geom(cb), "bbox")) {
+
+        b <- tiles_bbox(cb, tiles = cube_tiles(cb))
+        tiles <- sapply(b, function(x) bbox_intersects(x, cube_geom(cb)) && !bbox_touches(x, cube_geom(cb)))
+    } else if (inherits(cube_geom(cb), c("sf", "sfc"))) {
+
+        if (!requireNamespace("sf", quietly = TRUE))
+            stop("You need `sf` package to run this function.", call. = FALSE)
+
+        g <- tiles_geom(cb, tiles = cube_tiles(cb))
+        tiles <- sf::st_intersects(g, cube_geom(cb), sparse = FALSE) & !sf::st_touches(g, cube_geom(cb), sparse = FALSE)
+    } else
+        tiles <- rep(TRUE, length(cube_tiles(cb)))
+
+    open_entry(cb)[tiles]
+
+    res <- lapply(.fetch_tiles(cube = cube, which = which), function(tile) {
+
+        if (is.null(tile$bands))
+            stop("Error reading tile content: 'bands' field not found.", call. = FALSE)
+
+        data <- lapply(bands, function(band) {
+
+            layers <- do.call(mapply, args = c(list(FUN = c, SIMPLIFY = FALSE), tile$bands[[band]]$layers))
+
+            if (!is.null(to) && any(is.na(layers$date <- as.Date(layers$date, "%Y-%m-%d"))))
+                stop(sprintf("Inconsistent dates detected in tile '%s'", tile$id))
+
+            filter_layers <- (from <= layers$date) & (layers$date <= to)
+            layers$href <- layers$href[filter_layers]
+            layers$date <- layers$date[filter_layers]
+
+            return(layers)
+        })
+
+
+        timeline <- unique(lapply(data, function(band) {
+
+            return(band$date)
+        }))
+
+        if (length(timeline) > 1)
+            stop(sprintf("Inconsistent timelines detected in tile '%s'.", tile$id), call. = FALSE)
+
+        timeline <- timeline[[1]]
+
+        intervals <- timeline_intervals(timeline = timeline, stack_length = stack_length,
+                                        start_reference = start_reference, starts_interval = starts_interval)
+
+        stack <- lapply(intervals, function(interval) {
+
+            bands <- lapply(data, function(band) {
+
+                return(band$href[(interval$from <= band$date) & (band$date <= interval$to)])
+            })
+
+            timeline <- timeline[(interval$from <= timeline) & (timeline <= interval$to)]
+
+            res <- list(bands = bands, timeline = timeline)
+            return(res)
+        })
+
+        return(stack)
+    })
+}
+
+#### tile entry ####
+
+describe_entry.eo_tile <- function(en) {
+
+
+}
+
+check_entry.eo_tile <- function(en) {
+
+
+}
+
+open_entry.eo_tile <- function(en) {
+
+
+}
+
+#### tile catalog ####
+
+check.eo_tile <- function(tl) {
+
+
+}
+
+description.eo_tile <- function(tl) {
+
 
 }
 
 #### tiles get/set ####
 
-tiles_bbox.eo_cube <- function(cb, tiles = NULL) {
+tiles_bbox.eo_cube <- function(cb) {
 
-    if (is.null(tiles)) {
-
-        tiles <- cb$tiles
-    } else if ((is.logical(tiles) && length(tiles) != length(cb$tiles)) ||
-               (is.numeric(tiles) && max(tiles) > length(cb$tiles)) ||
-               (is.character(tiles) && any(!tiles %in% names(cb$tiles)))) {
-
-        stop("Invalid `tiles` parameter.", call. = FALSE)
-    } else
-        tiles <- cb$tiles[tiles]
-
-    res <- lapply(tiles, function(tile) {
+    res <- lapply(cb$tiles[cube_tiles(cb)], function(tile) {
 
         return(bbox(tile$extent$bbox))
     })
@@ -208,26 +288,44 @@ tiles_bbox.eo_cube <- function(cb, tiles = NULL) {
     return(res)
 }
 
-tiles_geom.eo_cube <- function(cb, tiles = NULL) {
+tiles_geom.eo_cube <- function(cb) {
 
     if (!requireNamespace("sf", quietly = TRUE))
         stop("You need `sf` package to run this function.", call. = FALSE)
 
-    if (is.null(tiles)) {
-
-        tiles <- cb$tiles
-    } else if ((is.logical(tiles) && length(tiles) != length(cb$tiles)) ||
-               (is.numeric(tiles) && max(tiles) > length(cb$tiles)) ||
-               (is.character(tiles) && any(!tiles %in% names(cb$tiles)))) {
-
-        stop("Invalid `tiles` parameter.", call. = FALSE)
-    } else
-        tiles <- cb$tiles[tiles]
-
-    res <- sf::st_sfc(lapply(tiles, function(tile) {
+    res <- lapply(cb$tiles[cube_tiles(cb)], function(tile) {
 
         sf::st_polygon(list(matrix(unlist(tile$extent$geometry$coordinates), ncol = 2, byrow = T)))
-    }), crs = cube_crs(cb))
+    })
+
+    res <- sf::st_sfc(res, crs = cube_crs(cb))
 
     return(res)
+}
+
+fetch_tiles.eo_cube <- function(cb) {
+
+    if (Sys.info()["sysname"] != "Windows" && requireNamespace("parallel", quietly = TRUE)) {
+
+        cb$tiles <- parallel::mclapply(cb$tiles[cube_tiles(tiles)], function(x) {
+
+            con <- new_connection(x$href)
+            res <- open_json(con)
+            close(con)
+
+            return(res)
+        }, mc.cores = 8)
+    } else {
+
+        cb$tiles <- lapply(cb$tiles[cube_tiles(tiles)], function(x) {
+
+            con <- new_connection(x$href)
+            res <- open_json(con)
+            close(con)
+
+            return(res)
+        })
+    }
+
+    return(cb)
 }

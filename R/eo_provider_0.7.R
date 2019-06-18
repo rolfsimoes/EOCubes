@@ -27,8 +27,6 @@ open_entry.eo_provider <- function(en) {
 
     res <- provider(con)
 
-    close(con)
-
     return(res)
 }
 
@@ -88,4 +86,12 @@ list_items.eo_provider <- function(pr) {
 exists_item.eo_provider <- function(pr, name) {
 
     return(all(name %in% names(pr$cubes)))
+}
+
+get_item.eo_provider <- function(pr, name) {
+
+    if (!exists_item(pr, name = name))
+        stop(sprintf("Cube entry '%s' not found.", name), call. = FALSE)
+
+    return(pr$cubes[[name]])
 }

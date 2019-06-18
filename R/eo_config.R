@@ -1,7 +1,7 @@
 default_config <- function() {
 
-    res <- cast(list(version = "0.7",
-                     remotes = list()), type = "eo_config")
+    res <- new_eo_object(list(version = "0.7",
+                              remotes = list()), type = "eo_config")
 
     return(res)
 }
@@ -17,22 +17,18 @@ config.default <- function() {
 
     res <- config(con)
 
-    close(con)
-
     return(res)
 }
 
 config.connection <- function(con) {
 
-    value <- tryCatch(open_json(con),
-                      error = function(e) {
+    .global[["conf"]] <- tryCatch(open_eo_object(con, type = "eo_config"),
+                                  error = function(e) {
 
-                          default <- default_config()
-                          save_json(default, con = con)
-                          return(default)
-                      })
-
-    .global[["conf"]] <- cast(value, default_type = "eo_config")
+                                      default <- default_config()
+                                      save_json(default, con = con)
+                                      return(default)
+                                  })
 
     invisible(NULL)
 }
@@ -65,10 +61,7 @@ list_providers <- function() {
 
 provider.eo_config <- function(cf, name) {
 
-    if (!exists_item(cf, name))
-        stop(sprintf("Provider entry '%s' not found.", name), call. = FALSE)
-
-    res <- open_entry(cast_entry(cf$remotes[[name]], default_type = "eo_provider_0.7"))
+    res <- open_entry(cast_entry(get_item(cf, name), default_type = "eo_provider"))
 
     return(res)
 }

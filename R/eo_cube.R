@@ -215,3 +215,8 @@ tiles_geom <- function(...) {
 
     UseMethod("tiles_geom")
 }
+
+fetch_tiles <- function(...) {
+
+    UseMethod("fetch_tiles")
+}
